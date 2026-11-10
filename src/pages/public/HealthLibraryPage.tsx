@@ -13,10 +13,54 @@ interface ArticleItem {
 }
 
 const ARTICLES: ArticleItem[] = [
-  { slug: 'understanding-cardiac-risk', title: 'Understanding Your True Cardiovascular Risk Factors', category: 'Cardiology', readTime: '5 min read', reviewer: 'Dr. Priya Sharma', summary: 'Hypertension and cholesterol are not silent enemies if tracked methodically. A guide to lipid parameters and preventive screening.' },
-  { slug: 'when-to-seek-ortho-consult', title: 'Persistent Knee Discomfort: Osteoarthritis or Ligament Injury?', category: 'Orthopedics', readTime: '4 min read', reviewer: 'Dr. Rajesh Kulkarni', summary: 'Why waiting out persistent knee swelling can accelerate cartilage degeneration. Early interventions versus surgical arthroplasty.' },
-  { slug: 'childhood-fever-red-flags', title: 'A Parent’s Clinical Roadmap to Toddler Fevers and Dehydration', category: 'Pediatrics', readTime: '6 min read', reviewer: 'Dr. Ananya Joshi', summary: 'When a spike in body temperature is a benign immune reaction, and the exact clinical signs that mandate emergency evaluation.' },
-  { slug: 'monsoon-dermatology-care', title: 'Guarding Your Skin Barrier in Humid Monsoon Climes', category: 'Dermatology', readTime: '3 min read', reviewer: 'Dr. Meera Patel', summary: 'Fungal flare-ups and bacterial folliculitis surge during monsoons. Practical dermatological steps to keep skin dry and protected.' },
+  {
+    slug: 'understanding-cardiac-risk',
+    title: 'Understanding Your True Cardiovascular Risk Factors: Beyond Total Cholesterol',
+    category: 'Cardiology',
+    readTime: '5 min read',
+    reviewer: 'Dr. Priya Sharma (Interventional Cardiologist)',
+    summary: 'Hypertension and ApoB/Lipid ratios are not silent enemies if tracked methodically. A senior clinician guide to preventive calcium scoring and coronary screening.',
+  },
+  {
+    slug: 'indian-diet-diabetes-nutrition',
+    title: 'Managing Glycemic Spikes on Traditional Indian Diets',
+    category: 'Nutrition',
+    readTime: '6 min read',
+    reviewer: 'Dr. Arun Nair & Chief Dietitian',
+    summary: 'Balancing white rice, rotis, and dal without sacrificing culinary culture. Practical carbohydrate sequencing and glycemic index modulation for Indian households.',
+  },
+  {
+    slug: 'when-to-seek-ortho-consult',
+    title: 'Persistent Knee Discomfort: When is Joint Preservation Still Possible?',
+    category: 'Orthopedics',
+    readTime: '4 min read',
+    reviewer: 'Dr. Rajesh Kulkarni (Joint Specialist)',
+    summary: 'Why waiting out persistent knee swelling can accelerate cartilage degeneration. Early muscle strengthening vs hyaluronic injections vs robotic arthroplasty.',
+  },
+  {
+    slug: 'childhood-fever-red-flags',
+    title: 'A Parent’s Clinical Roadmap to Toddler Fevers and Dehydration',
+    category: 'Pediatrics',
+    readTime: '6 min read',
+    reviewer: 'Dr. Ananya Joshi (Pediatrician)',
+    summary: 'When a spike in body temperature is a benign immune reaction, and the exact clinical danger signs that mandate emergency ER evaluation.',
+  },
+  {
+    slug: 'preventive-health-screening-milestones',
+    title: 'Preventive Health Checks by Age: What Tests Actually Save Lives?',
+    category: 'Preventive Healthcare',
+    readTime: '7 min read',
+    reviewer: 'Dr. Arun Nair (Senior Physician)',
+    summary: 'Mammography at 40, colonoscopy at 45, and annual HbA1c screening from age 30 for South Asian phenotypes. Evidence-based screening intervals.',
+  },
+  {
+    slug: 'monsoon-dermatology-care',
+    title: 'Guarding Your Skin Barrier in Humid Indian Monsoon Climes',
+    category: 'Dermatology',
+    readTime: '3 min read',
+    reviewer: 'Dr. Meera Patel (Dermatologist)',
+    summary: 'Fungal flare-ups and bacterial folliculitis surge during heavy rains. Practical dermatological steps to keep skin folds dry and barrier proteins intact.',
+  },
 ];
 
 export function HealthLibraryPage() {
@@ -71,15 +115,15 @@ export function HealthLibraryPage() {
               className="input pl-9 py-2 text-sm"
             />
           </div>
-          <div className="flex gap-2">
-            {['All', 'Cardiology', 'Orthopedics', 'Pediatrics', 'Dermatology'].map(c => (
+          <div className="flex gap-2 flex-wrap">
+            {['All', 'Cardiology', 'Nutrition', 'Orthopedics', 'Pediatrics', 'Preventive Healthcare', 'Dermatology'].map(c => (
               <button
                 key={c}
                 onClick={() => setActiveCat(c)}
-                className={`chip text-xs transition-colors ${
+                className={`chip text-xs font-medium transition-colors ${
                   activeCat === c
                     ? 'bg-verdigris text-white border-verdigris'
-                    : 'bg-paper text-ink hover:bg-bone'
+                    : 'bg-paper text-ink hover:bg-bone border-sage-light'
                 }`}
               >
                 {c}

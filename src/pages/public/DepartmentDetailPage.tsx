@@ -13,16 +13,71 @@ const DEPT_DATA: Record<string, {
   faqs: { q: string; a: string }[];
 }> = {
   'cardiology': {
-    description: 'Our Cardiology department offers comprehensive care for all heart and vascular conditions. From preventive cardiology to complex interventions, our team works with you at every step.',
-    conditions: ['Coronary Artery Disease', 'Heart Failure', 'Arrhythmias', 'Hypertension', 'Valvular Heart Disease', 'Congenital Heart Disease'],
-    procedures: ['Echocardiography', 'Angiography', 'Angioplasty & Stenting', 'Pacemaker Implantation', 'Electrophysiology Study', 'Cardiac Rehabilitation'],
+    description: 'Comprehensive tertiary care for cardiovascular, valvular, and coronary disorders. Featuring bi-plane catheterization labs, 24/7 primary angioplasty, and advanced heart failure pathways.',
+    conditions: ['Coronary Artery Disease', 'Acute Myocardial Infarction', 'Arrhythmias & Heart Block', 'Congestive Heart Failure', 'Valvular Heart Disease', 'Refractory Hypertension'],
+    procedures: ['Primary Coronary Angioplasty (PTCA)', 'Transcatheter Aortic Valve Replacement (TAVR)', 'Permanent Pacemaker & AICD Implantation', '3D Cardiac Electrophysiology (EP)', 'Color Doppler Echocardiography'],
     doctors: [
-      { name: 'Dr. Priya Sharma', specialty: 'Interventional Cardiologist', nextSlot: 'Today 4:30 PM', availability: 'available' },
-      { name: 'Dr. Vikram Rao', specialty: 'Electrophysiologist', nextSlot: 'Tomorrow 10:00 AM', availability: 'soon' },
+      { name: 'Dr. Priya Sharma', specialty: 'Senior Interventional Cardiologist', nextSlot: 'Today 4:30 PM', availability: 'available' },
+      { name: 'Dr. Vikram Rao', specialty: 'Cardiac Electrophysiologist', nextSlot: 'Tomorrow 10:00 AM', availability: 'soon' },
     ],
     faqs: [
-      { q: 'When should I see a cardiologist?', a: 'If you experience chest pain, shortness of breath, palpitations, or have risk factors like diabetes or high blood pressure, speak to your GP about a referral.' },
-      { q: 'What should I bring to my cardiology appointment?', a: 'Bring any previous ECGs, echocardiogram reports, medication list, and your referral letter if applicable.' },
+      { q: 'When should I see a cardiologist immediately?', a: 'Any sudden heavy chest constriction radiating to the left arm or jaw, accompanied by breathlessness or diaphoresis, demands emergency ER triage (Door-to-balloon < 60 mins).' },
+      { q: 'What tests should I carry for my first consultation?', a: 'Please bring recent lipid panels, fasting blood sugar, previous ECG strips, and 2D Echo reports.' },
+    ],
+  },
+  'orthopedics': {
+    description: 'Robotic-assisted joint reconstructions, sports arthroscopy, spine instrumentation, and geriatric fracture trauma units designed for rapid postoperative mobilization.',
+    conditions: ['End-Stage Knee Osteoarthritis', 'Avascular Necrosis of the Hip', 'ACL & Meniscal Sports Tears', 'Rotator Cuff Pathology', 'Cervical & Lumbar Spondylosis'],
+    procedures: ['Robotic Total Knee Replacement (TKR)', 'Minimally Invasive Hip Arthroplasty', 'Arthroscopic Shoulder & Knee Repair', 'Complex Fracture Fixation', 'Joint Infiltration Injections'],
+    doctors: [
+      { name: 'Dr. Rajesh Kulkarni', specialty: 'Chief Robotic Joint Replacement Surgeon', nextSlot: 'Today 3:00 PM', availability: 'available' },
+    ],
+    faqs: [
+      { q: 'How soon can a patient walk following robotic knee replacement?', a: 'Under our muscle-sparing protocols, patients take assisted steps within 6 to 12 hours following surgery.' },
+    ],
+  },
+  'neurology': {
+    description: 'Hyper-acute ischemic stroke intervention, neuro-critical monitoring, epilepsy mapping, migraine treatment, and Parkinson’s movement disorder clinics.',
+    conditions: ['Acute Ischemic Stroke', 'Epilepsy & Refractory Seizures', 'Parkinson’s Disease', 'Multiple Sclerosis', 'Intractable Migraines'],
+    procedures: ['Mechanical Thrombectomy', 'Digital Video EEG & Polysomnography', 'Nerve Conduction Studies & EMG', 'Botox Injections for Spasticity'],
+    doctors: [
+      { name: 'Dr. Sunita Desai', specialty: 'Chief of Neurosciences & Stroke', nextSlot: 'Tomorrow 10:00 AM', availability: 'available' },
+    ],
+    faqs: [
+      { q: 'What is the golden window for stroke thrombolysis?', a: 'Intravenous clot-busting therapy must be administered within 4.5 hours from the exact onset of symptoms.' },
+    ],
+  },
+  'pediatrics': {
+    description: 'Tertiary newborn intensive care (Level-3 NICU), child immunization, growth screening, adolescent wellness, and pediatric respiratory allergy clinics.',
+    conditions: ['Childhood Asthma & Bronchiolitis', 'Neonatal Jaundice', 'Pediatric Fevers & Infections', 'Growth & Developmental Delays', 'Nutritional Deficiencies'],
+    procedures: ['Tertiary Neonatal Ventilation', 'Vaccination Schedule Administration', 'Pediatric Spirometry & Allergy Panels', 'Well-Baby Health Tracking'],
+    doctors: [
+      { name: 'Dr. Ananya Joshi', specialty: 'Senior Consultant Pediatrician & Neonatologist', nextSlot: 'Today 5:00 PM', availability: 'available' },
+    ],
+    faqs: [
+      { q: 'What vaccination charts are followed at Relif Hospital?', a: 'We follow the Indian Academy of Pediatrics (IAP) alongside WHO recommended universal immunization guidelines.' },
+    ],
+  },
+  'oncology': {
+    description: 'Multi-disciplinary tumor boards, organ-preserving surgical resections, modern systemic chemotherapy, targeted biological therapies, and compassionate palliative support.',
+    conditions: ['Breast Carcinoma', 'Head & Neck Malignancies', 'Gastrointestinal & Colorectal Cancer', 'Lung Cancer', 'Gynecological Tumors'],
+    procedures: ['Breast Oncoplasty', 'Cytoreductive Surgery & HIPEC', 'Chemotherapy Day-Care Infusion', 'Minimally Invasive Onco-Surgery'],
+    doctors: [
+      { name: 'Dr. Sameer Sen', specialty: 'Senior Surgical Oncologist', nextSlot: 'Tomorrow 9:30 AM', availability: 'available' },
+    ],
+    faqs: [
+      { q: 'How does the Relif Tumor Board operate?', a: 'Every oncology case is collectively reviewed by surgical oncologists, medical oncologists, radiologists, and pathologists to agree on an evidence-based roadmap.' },
+    ],
+  },
+  'gynecology': {
+    description: 'Comprehensive women’s health encompassing pain-managed birthing suites (LDRP), minimally invasive laparoscopic gynecological surgery, fertility workup, and menopausal care.',
+    conditions: ['High-Risk Pregnancies', 'Uterine Fibroids & Endometriosis', 'Polycystic Ovarian Syndrome (PCOS)', 'Cervical & Uterine Dysplasia', 'Pelvic Organ Prolapse'],
+    procedures: ['Laparoscopic Hysterectomy & Myomectomy', 'Normal & Cesarean Deliveries in LDRP Suites', 'Diagnostic & Operative Hysteroscopy', 'Cervical Pap Smear & Colposcopy'],
+    doctors: [
+      { name: 'Dr. Deepa Krishnan', specialty: 'Senior Obstetrician & Gynecologist', nextSlot: 'Today 4:00 PM', availability: 'available' },
+    ],
+    faqs: [
+      { q: 'Are epidural painless delivery services available around the clock?', a: 'Yes, our obstetric anesthesia team is stationed 24/7 on our labor and delivery floor.' },
     ],
   },
 };
@@ -76,7 +131,12 @@ export function DepartmentDetailPage() {
               <h1 className="font-display text-5xl md:text-6xl font-bold text-ink mb-4">{dept.name}</h1>
               <p className="text-lg text-ink-soft mb-8 max-w-lg">{data.description}</p>
               <div className="flex flex-wrap gap-3">
-                <Link to={ROUTES.book} className="btn btn-primary btn-md">Book Appointment</Link>
+                <Link
+                  to={`/book?department=${encodeURIComponent(dept.name)}`}
+                  className="btn btn-primary btn-md bg-saffron text-ink hover:bg-[var(--saffron-deep)] font-semibold"
+                >
+                  Book OPD Appointment
+                </Link>
                 <Link to={ROUTES.doctors} className="btn btn-secondary btn-md">Meet our doctors</Link>
               </div>
             </div>

@@ -104,14 +104,65 @@ export function AboutPage() {
           </div>
         </div>
 
+        {/* Accreditations & Quality Benchmarks */}
+        <div>
+          <div className="text-center max-w-xl mx-auto mb-10">
+            <span className="font-mono text-xs font-medium text-verdigris tracking-widest uppercase block mb-2">
+              National & Global Quality Standards
+            </span>
+            <h2 className="font-display text-3xl font-bold text-ink">
+              Accredited Clinical Rigor
+            </h2>
+            <p className="text-xs text-ink-soft mt-1">
+              Independent benchmarks governing patient safety, infection control, and diagnostic accuracy.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              {
+                title: 'NABH Accredited Hospital',
+                desc: 'National Accreditation Board for Hospitals & Healthcare Providers (5th Edition)',
+                badge: 'Patient Safety & Rights',
+              },
+              {
+                title: 'NABL Certified Diagnostics',
+                desc: 'ISO 15189:2012 certified molecular pathology and robotic automated biochemistry',
+                badge: 'Testing Precision',
+              },
+              {
+                title: 'ISO 9001:2015 Quality',
+                desc: 'Standardized administrative workflows, sterile supply tracking, and clinical audits',
+                badge: 'Management Systems',
+              },
+              {
+                title: 'ABDM & ABHA Aligned',
+                desc: 'Ayushman Bharat Digital Health Ecosystem interoperable electronic medical records',
+                badge: 'Digital Health Ready',
+              },
+            ].map(item => (
+              <div key={item.title} className="p-6 bg-paper rounded-2xl border border-sage-light shadow-warm-xs space-y-3">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-verdigris bg-mint px-2 py-0.5 rounded-full inline-block">
+                  {item.badge}
+                </span>
+                <h3 className="font-display font-bold text-ink text-lg">{item.title}</h3>
+                <p className="text-xs text-ink-soft leading-relaxed">{item.desc}</p>
+                <p className="text-[11px] text-sage pt-2 border-t border-sage-light">
+                  Demo certification indicator
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Leadership */}
         <div>
           <h2 className="font-display text-3xl font-bold text-ink mb-8">Clinical & Administrative Leadership</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
-              { name: 'Dr. Priya Sharma', role: 'Medical Director & Chief of Cardiology', qual: 'MBBS, MD, DM (Cardiology)' },
-              { name: 'Dr. Rajesh Kulkarni', role: 'Chairman, Surgical Services', qual: 'MBBS, MS (Orthopedics)' },
-              { name: 'Dr. Arun Nair', role: 'Chief Medical Officer', qual: 'MBBS, MD (Internal Medicine)' },
+              { name: 'Dr. Priya Sharma', role: 'Medical Director & Chief of Cardiology', qual: 'MBBS, MD, DM (Cardiology), FESC' },
+              { name: 'Dr. Rajesh Kulkarni', role: 'Chairman, Surgical Services & Robotic OT', qual: 'MBBS, MS, MCh (Orthopedics)' },
+              { name: 'Dr. Arun Nair', role: 'Chief Medical Officer & Clinical Governance', qual: 'MBBS, MD (Internal Medicine), FACP' },
             ].map(l => (
               <div key={l.name} className="card-bone p-5 rounded-2xl border border-sage-light">
                 <div className="h-40 bg-mint rounded-xl mb-4 flex items-center justify-center text-verdigris font-display text-4xl font-bold opacity-40">

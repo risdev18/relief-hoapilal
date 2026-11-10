@@ -104,6 +104,53 @@ export function ContactPage() {
                   </p>
                 </div>
               </div>
+
+              {/* Working Hours Card */}
+              <div className="p-5 bg-bone rounded-xl border border-sage-light space-y-3">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-verdigris" />
+                  <h4 className="font-display font-semibold text-ink text-sm">Hospital Working Hours</h4>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-xs text-ink-soft border-t border-sage-light pt-2">
+                  <div>
+                    <span className="font-semibold text-ink block">Outpatient (OPD) Desk</span>
+                    <span>Monday – Saturday: 08:00 AM – 08:00 PM</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-ink block">Emergency & Trauma Triage</span>
+                    <span className="text-signal font-semibold">24 Hours / 7 Days (365 Days)</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-ink block">NABL Pathology & Imaging</span>
+                    <span>24/7 Sample Collection & Reports</span>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-ink block">IPD Visiting Hours</span>
+                    <span>04:30 PM – 07:00 PM Daily</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Google Maps Card */}
+              <div className="p-4 bg-paper rounded-xl border border-sage-light flex items-center justify-between shadow-warm-xs">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-mint flex items-center justify-center text-verdigris">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-ink text-sm">Need Driving Directions?</p>
+                    <p className="text-xs text-ink-soft">Locate our Andheri West emergency ramp via Google Maps</p>
+                  </div>
+                </div>
+                <a
+                  href="https://maps.google.com/?q=Versova+Andheri+West+Mumbai"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-sm text-xs"
+                >
+                  Open Maps
+                </a>
+              </div>
             </div>
 
             <div className="p-5 bg-mint/40 rounded-xl border border-sage flex items-center justify-between">

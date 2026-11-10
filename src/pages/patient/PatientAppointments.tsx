@@ -176,10 +176,14 @@ function AppointmentRow({
   appt,
   tab,
   onViewQR,
+  onCancel,
+  onReschedule,
 }: {
-  appt:     Appointment;
-  tab:      'upcoming' | 'past' | 'cancelled';
-  onViewQR: (appt: Appointment) => void;
+  appt:         Appointment;
+  tab:          'upcoming' | 'past' | 'cancelled';
+  onViewQR:     (appt: Appointment) => void;
+  onCancel?:    (id: string) => void;
+  onReschedule?:(appt: Appointment) => void;
 }) {
   return (
     <motion.div
@@ -217,20 +221,29 @@ function AppointmentRow({
                   <QrCode size={12} />
                   View QR
                 </button>
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:text-ink border border-sage-light rounded-pill px-2.5 py-1 hover:border-sage transition-colors">
+                <button
+                  onClick={() => onReschedule?.(appt)}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-ink-soft hover:text-ink border border-sage-light rounded-pill px-2.5 py-1 hover:border-sage transition-colors"
+                >
                   <RefreshCw size={12} />
                   Reschedule
                 </button>
-                <button className="inline-flex items-center gap-1.5 text-xs font-medium text-signal hover:text-[var(--signal-deep)] border border-[var(--signal-light)] rounded-pill px-2.5 py-1 hover:border-signal transition-colors">
+                <button
+                  onClick={() => onCancel?.(appt.id)}
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-signal hover:text-[var(--signal-deep)] border border-[var(--signal-light)] rounded-pill px-2.5 py-1 hover:border-signal transition-colors"
+                >
                   <X size={12} />
                   Cancel
                 </button>
               </>
             )}
             {tab === 'past' && (
-              <button className="inline-flex items-center gap-1.5 text-xs font-medium text-verdigris hover:text-verdigris-deep border border-sage rounded-pill px-2.5 py-1 hover:border-verdigris transition-colors">
+              <button
+                onClick={() => onViewQR(appt)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-verdigris hover:text-verdigris-deep border border-sage rounded-pill px-2.5 py-1 hover:border-verdigris transition-colors"
+              >
                 <FileText size={12} />
-                View Summary
+                View OPD Summary
               </button>
             )}
           </div>
@@ -245,27 +258,44 @@ export function PatientAppointments() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [qrAppt, setQrAppt]     = useState<Appointment | null>(null);
   const [upcomingList, setUpcomingList] = useState<Appointment[]>(UPCOMING);
+  const [cancelledList, setCancelledList] = useState<Appointment[]>([]);
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleSlot, setRescheduleSlot] = useState('11:00 AM');
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
 
   const fetchLiveList = async () => {
     try {
       const records = await SupabaseService.getAppointments();
       if (records && records.length > 0) {
-        const live: Appointment[] = records.map((r: SupabaseAppointmentRecord) => ({
-          id: r.appointment_id,
-          doctor: r.doctor_name,
-          department: r.department_name,
-          date: r.appointment_date,
-          time: r.appointment_time,
-          branch: r.branch_name || 'Andheri West',
-          status: 'confirmed',
-        }));
+        const liveUpcoming: Appointment[] = [];
+        const liveCancelled: Appointment[] = [];
 
-        const map = new Map<string, Appointment>();
-        live.forEach(a => map.set(a.id, a));
-        UPCOMING.forEach(a => {
-          if (!map.has(a.id)) map.set(a.id, a);
+        records.forEach((r: SupabaseAppointmentRecord) => {
+          const item: Appointment = {
+            id: r.appointment_id,
+            doctor: r.doctor_name,
+            department: r.department_name,
+            date: r.appointment_date,
+            time: r.appointment_time,
+            branch: r.branch_name || 'Andheri West',
+            status: (r.status.toLowerCase() as any) || 'confirmed',
+          };
+          if (r.status.toLowerCase() === 'cancelled') {
+            liveCancelled.push(item);
+          } else {
+            liveUpcoming.push(item);
+          }
         });
-        setUpcomingList(Array.from(map.values()));
+
+        // Merge with defaults
+        const upMap = new Map<string, Appointment>();
+        liveUpcoming.forEach(a => upMap.set(a.id, a));
+        UPCOMING.forEach(a => {
+          if (!upMap.has(a.id)) upMap.set(a.id, a);
+        });
+        setUpcomingList(Array.from(upMap.values()));
+        setCancelledList(liveCancelled);
       }
     } catch {
       // Keep static list
@@ -279,27 +309,119 @@ export function PatientAppointments() {
     return () => window.removeEventListener('relif_appointment_created', handleCreated);
   }, []);
 
+  const handleCancelAppointment = async (id: string) => {
+    if (confirm('Are you sure you wish to cancel this appointment? (Demo cancellation)')) {
+      await SupabaseService.updateAppointmentStatus(id, 'cancelled');
+      setToastMsg(`Appointment ${id} has been cancelled.`);
+      fetchLiveList();
+      setTimeout(() => setToastMsg(null), 4000);
+    }
+  };
+
+  const handleSaveReschedule = async () => {
+    if (!rescheduleAppt) return;
+    await SupabaseService.updateAppointmentStatus(rescheduleAppt.id, 'confirmed');
+    setToastMsg(`Appointment ${rescheduleAppt.id} successfully rescheduled to ${rescheduleDate} at ${rescheduleSlot}.`);
+    setRescheduleAppt(null);
+    fetchLiveList();
+    setTimeout(() => setToastMsg(null), 5000);
+  };
+
   const tabs: { key: 'upcoming' | 'past' | 'cancelled'; label: string; count?: number }[] = [
     { key: 'upcoming',  label: 'Upcoming',  count: upcomingList.length },
     { key: 'past',      label: 'Past',      count: PAST.length },
-    { key: 'cancelled', label: 'Cancelled' },
+    { key: 'cancelled', label: 'Cancelled', count: cancelledList.length },
   ];
 
   const listMap = {
     upcoming:  upcomingList,
     past:      PAST,
-    cancelled: [] as Appointment[],
+    cancelled: cancelledList,
   };
 
   const list = listMap[activeTab];
 
   return (
     <>
+      {toastMsg && (
+        <div className="fixed top-20 right-6 z-50 bg-mint border border-sage p-4 rounded-xl shadow-warm-lg text-ink text-sm flex items-center gap-2">
+          <RefreshCw size={16} className="text-verdigris" />
+          <span>{toastMsg}</span>
+        </div>
+      )}
+
       <QRModal
         open={!!qrAppt}
         appt={qrAppt}
         onClose={() => setQrAppt(null)}
       />
+
+      {/* Reschedule Modal */}
+      {rescheduleAppt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-paper max-w-md w-full rounded-2xl border border-sage p-6 shadow-warm-lg space-y-5">
+            <div className="flex justify-between items-center">
+              <h3 className="font-display font-bold text-xl text-ink">Reschedule Appointment</h3>
+              <button onClick={() => setRescheduleAppt(null)} className="text-ink-soft hover:text-ink">
+                <X size={18} />
+              </button>
+            </div>
+            <p className="text-xs text-ink-soft">
+              Rescheduling for <strong className="text-ink">{rescheduleAppt.doctor}</strong> ({rescheduleAppt.department})
+            </p>
+
+            <div className="space-y-4 text-xs">
+              <div>
+                <label className="block text-ink font-semibold mb-1">New Appointment Date</label>
+                <input
+                  type="date"
+                  min={new Date().toISOString().split('T')[0]}
+                  value={rescheduleDate || new Date().toISOString().split('T')[0]}
+                  onChange={e => setRescheduleDate(e.target.value)}
+                  className="input text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block text-ink font-semibold mb-1">Preferred OPD Slot</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {['09:30 AM', '11:00 AM', '02:30 PM', '04:00 PM'].map(slot => (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => setRescheduleSlot(slot)}
+                      className={`p-2 rounded-lg border text-center transition-all ${
+                        rescheduleSlot === slot
+                          ? 'bg-saffron border-saffron text-ink font-bold'
+                          : 'border-sage-light hover:border-verdigris'
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              <Button
+                variant="primary"
+                className="flex-1 justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)]"
+                onClick={handleSaveReschedule}
+              >
+                Confirm Reschedule
+              </Button>
+              <Button
+                variant="secondary"
+                className="flex-1 justify-center"
+                onClick={() => setRescheduleAppt(null)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
@@ -311,7 +433,7 @@ export function PatientAppointments() {
             <h1 className="font-display text-4xl font-semibold text-ink">
               Your appointments.
             </h1>
-            <p className="text-ink-soft mt-1">View and manage your hospital visits.</p>
+            <p className="text-ink-soft mt-1">View, reschedule, and manage your hospital visits.</p>
           </motion.div>
 
           <Link to={ROUTES.book}>
@@ -364,8 +486,8 @@ export function PatientAppointments() {
           >
             {list.length === 0 ? (
               <EmptyState
-                title="No cancelled appointments"
-                description="Your cancelled appointments will appear here."
+                title="No appointments"
+                description={`You have no ${activeTab} appointments.`}
                 icon={<Calendar size={40} className="text-sage" />}
               />
             ) : (
@@ -375,6 +497,8 @@ export function PatientAppointments() {
                   appt={appt}
                   tab={activeTab}
                   onViewQR={setQrAppt}
+                  onCancel={handleCancelAppointment}
+                  onReschedule={setRescheduleAppt}
                 />
               ))
             )}

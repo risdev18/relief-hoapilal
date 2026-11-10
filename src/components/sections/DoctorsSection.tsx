@@ -180,12 +180,22 @@ function DoctorCard({ doctor, index }: DoctorCardProps) {
           <span className="text-xs text-ink-soft">{doctor.languages.slice(0, 2).join(', ')}</span>
         </div>
 
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {doctor.consultationTypes.includes('video') && (
-            <Badge variant="default" size="sm">📹 Video</Badge>
-          )}
-          <span className="text-xs font-medium text-verdigris">{doctor.nextSlot}</span>
+        <div className="flex items-center justify-between pt-2 mt-2 border-t border-sage-light">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            {doctor.consultationTypes.includes('video') && (
+              <Badge variant="default" size="sm">📹 Video</Badge>
+            )}
+            <span className="text-xs font-medium text-verdigris">{doctor.nextSlot}</span>
+          </div>
+          <span className="font-display font-bold text-sm text-ink">₹1,200</span>
         </div>
+
+        <Link
+          to={`/book?doctorId=${doctor.id}&doctorName=${encodeURIComponent(doctor.name)}&department=${encodeURIComponent(doctor.department)}`}
+          className="btn btn-primary btn-sm w-full justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)] font-semibold text-xs mt-2"
+        >
+          Book Consultation
+        </Link>
       </div>
     </motion.div>
   );
