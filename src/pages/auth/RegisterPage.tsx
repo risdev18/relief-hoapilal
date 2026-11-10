@@ -12,6 +12,7 @@ import { Button, Input } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
 import { cn, sleep } from '@/utils';
 import { ROUTES } from '@/config/constants';
+import { AuthService } from '@/services/authService';
 
 // ── Zod schema ───────────────────────────────────────────────────────────────
 const registerSchema = z
@@ -51,10 +52,17 @@ export function RegisterPage() {
     resolver: zodResolver(registerSchema),
   });
 
-  const onSubmit = async (_data: RegisterFormValues) => {
+  const onSubmit = async (data: RegisterFormValues) => {
     setIsSubmitting(true);
-    // TODO: wire to Firebase Auth
-    await sleep(1500);
+    await AuthService.signUpWithSupabase({
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      dob: data.dateOfBirth,
+      gender: data.gender,
+    });
+    setIsSubmitting(false);
     navigate(ROUTES.patientDashboard);
   };
 

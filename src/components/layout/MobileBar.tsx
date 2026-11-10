@@ -61,7 +61,7 @@ const DEMO_RESPONSES: Record<string, string> = {
   default: "Hi! I'm Relif's hospital guide. I can help you find departments, doctors, or explain how to book an appointment. What can I help you with?\n\n⚠ I provide information only — not medical advice. For emergencies, please call our emergency line.",
   book: "To book an appointment:\n1. Visit our **Book Appointment** page\n2. Select a department or doctor\n3. Choose your branch, date and slot\n4. Enter patient details and confirm\n\nYou'll receive an appointment ID and QR code for check-in.",
   department: "We have 20 departments including Cardiology, Neurology, Orthopedics, Pediatrics, and more. Would you like to find a specific department or doctor?",
-  emergency: "🚨 For emergencies, please call our emergency line immediately: " + APP_CONFIG.emergencyNumber + " (Demo)\n\nOur Emergency Medicine department is open 24/7.",
+  emergency: "🚨 For emergencies, please call our trauma line immediately: " + APP_CONFIG.emergencyNumber + "\n\nOur Emergency Medicine department is open 24/7.",
   doctor: "You can browse all our doctors at /doctors, filter by department, specialty, language, or availability. Would you like help finding a specific type of doctor?",
 };
 

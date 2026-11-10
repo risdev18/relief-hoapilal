@@ -72,6 +72,11 @@ export function Header() {
 
   useEffect(() => {
     setActivePatient(AuthService.getActivePatient());
+    const handleAuthChange = () => {
+      setActivePatient(AuthService.getActivePatient());
+    };
+    window.addEventListener('relif_auth_state_changed', handleAuthChange);
+    return () => window.removeEventListener('relif_auth_state_changed', handleAuthChange);
   }, [location]);
 
   useEffect(() => {
@@ -147,26 +152,44 @@ export function Header() {
               })}
             </div>
 
-            {/* Patient Portal / Returning Patient Indicator */}
+            {/* Patient Portal / Login & Registration Options */}
             {activePatient ? (
-              <Link
-                to={ROUTES.patientDashboard}
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris bg-mint/50 hover:bg-mint transition-colors px-3 py-1.5 rounded-full border border-verdigris/30 shadow-warm-xs"
-                title={`Returning Patient: ${activePatient.fullName} (${activePatient.uhid})`}
-              >
-                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <User size={13} className="text-verdigris" />
-                <span className="font-mono font-medium">{activePatient.fullName.split(' ')[0]}</span>
-                <span className="text-[10px] text-verdigris-deep font-mono opacity-80">({activePatient.uhid})</span>
-              </Link>
+              <div className="hidden sm:flex items-center gap-1.5">
+                <Link
+                  to={ROUTES.patientDashboard}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris bg-mint/50 hover:bg-mint transition-colors px-3 py-1.5 rounded-full border border-verdigris/30 shadow-warm-xs"
+                  title={`Logged in as ${activePatient.fullName} (${activePatient.uhid})`}
+                >
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <User size={13} className="text-verdigris" />
+                  <span className="font-mono font-medium">{activePatient.fullName.split(' ')[0]}</span>
+                  <span className="text-[10px] text-verdigris-deep font-mono opacity-80">({activePatient.uhid})</span>
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => AuthService.logoutPatient()}
+                  className="text-[11px] font-mono text-ink-soft hover:text-signal transition-colors px-2 py-1"
+                  title="Sign out / Switch account"
+                >
+                  Exit
+                </button>
+              </div>
             ) : (
-              <Link
-                to={ROUTES.login}
-                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-3 py-2 rounded-full hover:bg-bone"
-              >
-                <User size={15} className="text-verdigris" />
-                <span>{t('nav.login')}</span>
-              </Link>
+              <div className="hidden sm:flex items-center gap-1">
+                <Link
+                  to={ROUTES.login}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-3 py-1.5 rounded-full hover:bg-bone border border-transparent hover:border-sage-light"
+                >
+                  <User size={14} className="text-verdigris" />
+                  <span>{t('nav.login')}</span>
+                </Link>
+                <Link
+                  to={ROUTES.register}
+                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2.5 py-1 rounded-full border border-verdigris/25 transition-colors"
+                >
+                  New Patient
+                </Link>
+              </div>
             )}
 
             {/* Luxury Primary CTA: Champagne / Saffron Gold Elevation */}
@@ -273,13 +296,22 @@ export function Header() {
                     <span>Portal: {activePatient.fullName} ({activePatient.uhid})</span>
                   </Link>
                 ) : (
-                  <Link
-                    to={ROUTES.login}
-                    className="btn btn-secondary btn-lg w-full justify-center"
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    {t('nav.login')}
-                  </Link>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Link
+                      to={ROUTES.login}
+                      className="btn btn-secondary btn-lg justify-center text-sm"
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      {t('nav.login')}
+                    </Link>
+                    <Link
+                      to={ROUTES.register}
+                      className="btn btn-outline btn-lg justify-center text-sm border-verdigris text-verdigris font-semibold"
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      New Patient
+                    </Link>
+                  </div>
                 )}
               </div>
             </div>

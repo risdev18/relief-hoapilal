@@ -1,15 +1,14 @@
-// LoginPage.tsx — Relif Hospital Patient Auth
-// Dual persistence: Supabase Auth ready + Local Patient Profile (Rahul Vinod Mehta)
+// LoginPage.tsx — Relif Hospital Patient Portal Authentication
+// Direct Supabase Auth Integration + New Patient Registration Link + Demo Access
 
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, User, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Eye, EyeOff, User, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, UserPlus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Input } from '@/components/ui';
-import { sleep } from '@/utils';
 import { ROUTES } from '@/config/constants';
 import { AuthService, PatientUser } from '@/services/authService';
 
@@ -25,6 +24,7 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [activePatient, setActivePatient] = useState<PatientUser | null>(null);
 
   useEffect(() => {
@@ -40,21 +40,30 @@ export function LoginPage() {
   } = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      email: 'rahul.mehta@email.com',
-      password: '••••••••',
+      email: '',
+      password: '',
     },
   });
 
   const onSubmit = async (data: LoginFormValues) => {
     setIsSubmitting(true);
-    AuthService.loginPatient(data.email);
-    await sleep(600);
-    setIsSubmitting(false);
-    navigate(ROUTES.patientDashboard);
+    setErrorMessage(null);
+
+    const result = await AuthService.signInWithSupabase(data.email, data.password);
+
+    if (result.success) {
+      setIsSubmitting(false);
+      navigate(ROUTES.patientDashboard);
+    } else {
+      setIsSubmitting(false);
+      setErrorMessage(
+        result.error || 'Authentication failed. Please verify your Supabase email and password, or register as a new patient.'
+      );
+    }
   };
 
-  const handleQuickRevisit = () => {
-    AuthService.loginPatient(activePatient?.email || 'rahul.mehta@email.com');
+  const handleDemoLogin = () => {
+    AuthService.loginAsDemo();
     navigate(ROUTES.patientDashboard);
   };
 
@@ -81,6 +90,16 @@ export function LoginPage() {
             <span>✓ ABHA Integrated</span>
             <span>✓ Verified UHID</span>
           </div>
+
+          <div className="p-4 rounded-2xl bg-paper/70 border border-sage-light text-left text-xs text-ink-soft space-y-1.5 mt-8">
+            <p className="font-semibold text-ink flex items-center gap-1.5">
+              <Sparkles size={13} className="text-saffron" />
+              Supabase Auth Integrated
+            </p>
+            <p>
+              Log in with any email and password registered in your Supabase project. If you haven't registered yet, click <strong>"New Patient Registration"</strong>.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -93,54 +112,57 @@ export function LoginPage() {
               <span className="font-mono text-xs text-saffron uppercase ml-1 font-bold">Care</span>
             </Link>
             <h1 className="font-display text-3xl font-bold text-ink mb-1">Patient Portal Login</h1>
-            <p className="text-sm text-ink-soft">Enter your registered Email, Mobile, or Hospital UHID.</p>
+            <p className="text-sm text-ink-soft">Sign in with your registered Supabase email, mobile, or UHID.</p>
           </div>
 
-          {/* Returning Customer Saved Details Card */}
-          {activePatient && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-bone rounded-2xl border border-sage space-y-3 shadow-warm-xs"
+          {/* New Patient Registration Banner */}
+          <div className="p-4 rounded-2xl bg-bone border border-sage flex items-center justify-between gap-3 shadow-warm-xs">
+            <div className="space-y-0.5">
+              <span className="text-xs font-bold text-ink flex items-center gap-1.5">
+                <UserPlus size={14} className="text-verdigris" />
+                Are you a new patient?
+              </span>
+              <p className="text-[11px] text-ink-soft">Create your official UHID and patient dossier in 1 minute.</p>
+            </div>
+            <Link
+              to={ROUTES.register}
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-verdigris text-white hover:bg-verdigris-deep transition-all shadow-xs flex-shrink-0"
             >
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-verdigris bg-mint px-2 py-0.5 rounded-full">
-                  Returning Patient Recognized
-                </span>
-                <span className="text-xs font-mono text-ink-soft font-medium">UHID: {activePatient.uhid}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-verdigris/10 text-verdigris flex items-center justify-center font-bold text-sm">
-                  {activePatient.fullName.split(' ').map(n => n[0]).join('')}
-                </div>
-                <div>
-                  <h4 className="text-sm font-bold text-ink">{activePatient.fullName}</h4>
-                  <p className="text-xs text-ink-soft">{activePatient.email} · {activePatient.phone}</p>
-                </div>
-              </div>
-              <div className="text-xs text-ink-soft bg-paper/80 p-2.5 rounded-xl border border-sage-light flex items-center justify-between">
-                <span className="flex items-center gap-1.5">
-                  <CheckCircle2 size={13} className="text-verdigris" />
-                  Blood: <strong className="text-ink">{activePatient.bloodGroup}</strong> | ABHA: <strong className="text-ink">{activePatient.abhaId}</strong>
-                </span>
-                <span className="font-mono text-[11px] text-verdigris font-semibold">3 Active Records</span>
-              </div>
-              <Button
-                type="button"
-                onClick={handleQuickRevisit}
-                className="w-full justify-center bg-saffron text-ink hover:bg-saffron-deep font-semibold shadow-warm-xs"
+              Register Now →
+            </Link>
+          </div>
+
+          {/* Error Message Alert */}
+          <AnimatePresence>
+            {errorMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="p-3.5 rounded-xl bg-signal/10 border border-signal/30 text-signal text-xs flex items-start gap-2.5"
               >
-                <span>Continue as {activePatient.fullName.split(' ')[0]} →</span>
-              </Button>
-            </motion.div>
-          )}
+                <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <p className="font-semibold">{errorMessage}</p>
+                  <p className="text-ink-soft">
+                    Tip: If you haven't registered this email in Supabase yet, use{' '}
+                    <Link to={ROUTES.register} className="text-verdigris underline font-semibold">
+                      New Patient Registration
+                    </Link>{' '}
+                    or try the Instant Demo Account below.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Standard Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <Input
-                label="Registered Email / UHID / Mobile"
-                placeholder="e.g. rahul.mehta@email.com or RH26-00192"
+                label="Supabase Email / Registered ID"
+                type="email"
+                placeholder="e.g. patient@example.com"
                 {...register('email')}
               />
               {errors.email && <p className="text-xs text-signal mt-1">{errors.email.message}</p>}
@@ -149,7 +171,7 @@ export function LoginPage() {
             <div>
               <div className="relative">
                 <Input
-                  label="Password / Access Pin"
+                  label="Password"
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your security password"
                   {...register('password')}
@@ -169,19 +191,51 @@ export function LoginPage() {
             <Button
               type="submit"
               variant="primary"
-              className="w-full justify-center bg-verdigris text-white hover:bg-verdigris-deep font-semibold"
+              className="w-full justify-center bg-verdigris text-white hover:bg-verdigris-deep font-semibold py-3 shadow-warm-sm"
               disabled={isSubmitting}
             >
-              {isSubmitting ? 'Signing in…' : 'Access Patient Portal'}
+              {isSubmitting ? 'Signing in via Supabase…' : 'Sign In to Patient Portal'}
             </Button>
           </form>
 
-          <p className="text-center text-xs text-ink-soft">
-            Don't have an account or UHID?{' '}
-            <Link to={ROUTES.register} className="text-verdigris font-semibold hover:underline">
-              Register as New Patient
-            </Link>
-          </p>
+          {/* Quick Demo Login Option */}
+          <div className="pt-2">
+            <div className="relative flex py-2 items-center">
+              <div className="flex-grow border-t border-sage-light"></div>
+              <span className="flex-shrink mx-3 text-[11px] font-mono uppercase text-ink-soft/70">Or One-Click Test</span>
+              <div className="flex-grow border-t border-sage-light"></div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDemoLogin}
+              className="w-full flex items-center justify-between p-3 rounded-xl border border-sage/80 bg-paper hover:bg-bone transition-all text-xs text-ink group"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-full bg-saffron/20 text-ink flex items-center justify-center font-bold text-xs">
+                  RM
+                </div>
+                <div className="text-left">
+                  <span className="font-semibold block text-ink">Explore with Rahul Mehta's Record</span>
+                  <span className="text-[10px] text-ink-soft font-mono">UHID: RH26-00192 · Active Prescriptions & Lab Results</span>
+                </div>
+              </div>
+              <span className="text-verdigris font-semibold group-hover:translate-x-1 transition-transform">Enter →</span>
+            </button>
+          </div>
+
+          <div className="text-center pt-2">
+            <p className="text-xs text-ink-soft">
+              Are you a hospital doctor or staff?{' '}
+              <Link to="/doctor/dashboard" className="text-verdigris font-semibold hover:underline">
+                Doctor Portal
+              </Link>{' '}
+              ·{' '}
+              <Link to="/reception/dashboard" className="text-verdigris font-semibold hover:underline">
+                Reception Desk
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>
