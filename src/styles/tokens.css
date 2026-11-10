@@ -1,0 +1,138 @@
+/* ==========================================================================
+   RELIF HOSPITAL — DESIGN TOKENS
+   CSS Custom Properties — The Single Source of Truth
+   NO BLUE. NO NAVY. NO INDIGO. NO SLATE.
+   ========================================================================== */
+
+:root {
+  /* ── Core Palette ─────────────────────────────────────────────────────── */
+  --paper:          #FAF6EE;   /* Warm off-white — main background          */
+  --bone:           #F1EADC;   /* Cream — alternate section backgrounds      */
+  --ink:            #10261F;   /* Deep green-black — primary text            */
+  --ink-soft:       #3E5249;   /* Muted green — secondary text               */
+  --ink-muted:      #6B8077;   /* Light muted green — placeholders           */
+
+  /* ── Brand Green ─────────────────────────────────────────────────────── */
+  --verdigris:      #1F7A6B;   /* Primary brand, links, secondary buttons    */
+  --verdigris-deep: #135247;   /* Hover, active states, dark sections        */
+  --verdigris-light:#2A9B89;   /* Lighter verdigris for accents              */
+  --mint:           #CFE6DB;   /* Soft fills, chips, availability dots       */
+  --mint-light:     #E8F4EF;   /* Very soft mint for backgrounds             */
+  --sage:           #8FB5A3;   /* Borders, illustrations, decorative lines   */
+  --sage-light:     #C0D8CE;   /* Light sage for subtle borders              */
+
+  /* ── Accent ──────────────────────────────────────────────────────────── */
+  --saffron:        #F0A22E;   /* ONE primary CTA per screen                 */
+  --saffron-deep:   #D4861A;   /* Hover on saffron                           */
+  --saffron-light:  #FBE4B5;   /* Light saffron for fills                    */
+  --clay:           #E7C9A9;   /* Warm secondary fill                        */
+  --clay-deep:      #C9A87C;   /* Darker clay                                */
+
+  /* ── Signal (EMERGENCY ONLY) ─────────────────────────────────────────── */
+  --signal:         #D1432F;   /* Emergency strip and buttons ONLY           */
+  --signal-deep:    #A83220;   /* Hover on signal                            */
+  --signal-light:   #F9D5D0;   /* Light signal for fills                     */
+
+  /* ── Dark Mode / Night Sections ─────────────────────────────────────── */
+  --night:          #0B1F1B;   /* Deep green-black for dark sections         */
+  --night-soft:     #152E28;   /* Slightly lighter night for cards           */
+  --night-muted:    #1E3D35;   /* Night with green tint for borders          */
+
+  /* ── Typography Scale (Fluid) ────────────────────────────────────────── */
+  --text-xs:    clamp(0.75rem,  0.7rem  + 0.25vw, 0.875rem);
+  --text-sm:    clamp(0.875rem, 0.8rem  + 0.37vw, 1rem);
+  --text-base:  clamp(1rem,     0.9rem  + 0.5vw,  1.125rem);
+  --text-lg:    clamp(1.125rem, 1rem    + 0.63vw, 1.25rem);
+  --text-xl:    clamp(1.25rem,  1.1rem  + 0.75vw, 1.5rem);
+  --text-2xl:   clamp(1.5rem,   1.3rem  + 1vw,    2rem);
+  --text-3xl:   clamp(1.875rem, 1.5rem  + 1.5vw,  2.5rem);
+  --text-4xl:   clamp(2.25rem,  1.8rem  + 2vw,    3rem);
+  --text-5xl:   clamp(3rem,     2.5rem  + 2.5vw,  4rem);
+  --text-6xl:   clamp(3.75rem,  3rem    + 3vw,    5rem);
+  --text-hero:  clamp(2.5rem,   2rem    + 4vw,    7.5rem);  /* 40–120px     */
+
+  /* ── Spacing ─────────────────────────────────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  /* ── Border Radii ────────────────────────────────────────────────────── */
+  --radius-sm:   8px;
+  --radius:      12px;
+  --radius-md:   16px;
+  --radius-lg:   24px;
+  --radius-xl:   32px;
+  --radius-2xl:  40px;
+  --radius-pill: 999px;
+
+  /* ── Shadows (warm, green-tinted, never gray-blue) ───────────────────── */
+  --shadow-sm:  0 1px 3px rgba(16,38,31,0.06), 0 1px 2px rgba(16,38,31,0.04);
+  --shadow:     0 4px 16px rgba(16,38,31,0.08), 0 2px 4px rgba(16,38,31,0.04);
+  --shadow-md:  0 8px 24px rgba(16,38,31,0.10), 0 4px 8px rgba(16,38,31,0.06);
+  --shadow-lg:  0 16px 48px rgba(16,38,31,0.12), 0 8px 16px rgba(16,38,31,0.08);
+  --shadow-xl:  0 24px 64px rgba(16,38,31,0.16), 0 12px 24px rgba(16,38,31,0.10);
+  --shadow-saffron:   0 4px 20px rgba(240,162,46,0.30);
+  --shadow-verdigris: 0 4px 20px rgba(31,122,107,0.25);
+
+  /* ── Transitions ─────────────────────────────────────────────────────── */
+  --ease-relif: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast:   200ms;
+  --duration-base:   300ms;
+  --duration-slow:   500ms;
+  --duration-slower: 700ms;
+
+  /* ── Paper grain noise overlay ───────────────────────────────────────── */
+  --noise-opacity: 0.025;
+
+  /* ── Focus ring ──────────────────────────────────────────────────────── */
+  --focus-ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--saffron);
+
+  /* ── Z-index layers ──────────────────────────────────────────────────── */
+  --z-emergency:  100;
+  --z-header:      90;
+  --z-modal:       80;
+  --z-drawer:      70;
+  --z-toast:       60;
+  --z-dropdown:    50;
+  --z-assistant:   40;
+  --z-float:       30;
+  --z-above:       10;
+  --z-base:         0;
+  --z-below:       -1;
+}
+
+/* ── Dark mode overrides ────────────────────────────────────────────────── */
+.dark {
+  --paper:    var(--night);
+  --bone:     var(--night-soft);
+  --ink:      #E8F4EF;
+  --ink-soft: #A5C4B8;
+  --ink-muted:#6B8077;
+  --sage:     #3D6B5C;
+  --sage-light:#2A4D41;
+  --mint:     #1A3D33;
+  --mint-light:#152E28;
+  --focus-ring: 0 0 0 2px var(--night), 0 0 0 4px var(--saffron);
+}
+
+/* ── High contrast mode ─────────────────────────────────────────────────── */
+.high-contrast {
+  --paper:    #FFFFFF;
+  --bone:     #F5F5F5;
+  --ink:      #000000;
+  --ink-soft: #1A1A1A;
+  --sage:     #4A4A4A;
+  --verdigris:#0F5E50;
+  --saffron:  #B56800;
+}
+

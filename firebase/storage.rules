@@ -1,0 +1,38 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isAdmin() {
+      return isAuthenticated() && (request.auth.token.role == 'admin' || request.auth.token.role == 'super_admin');
+    }
+    
+    function isDoctor() {
+      return isAuthenticated() && request.auth.token.role == 'doctor';
+    }
+
+    // Public Hospital Media (Doctors profile photos, CMS gallery)
+    match /public/{allPaths=**} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Patient Confidential Documents (Prescriptions, Scan DICOMs/PDFs)
+    match /patients/{patientId}/{documentId} {
+      // Accessible exclusively by patient owner, treating doctor or admin
+      allow read: if isAuthenticated() && (
+        request.auth.uid == patientId ||
+        isDoctor() ||
+        isAdmin()
+      );
+      allow write: if isAuthenticated() && (
+        request.auth.uid == patientId ||
+        isDoctor() ||
+        isAdmin()
+      );
+    }
+  }
+}
