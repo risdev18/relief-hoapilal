@@ -1,9 +1,10 @@
 # RELIF HOSPITAL — Implementation Progress
 
 ## Overall Status
-- **Current Phase:** Phase 1, Phase 2, Phase 3, Phase 4 Scaffolding & Design Complete
+- **Current Phase:** All Core Phases, Indian Healthcare Architecture, Multilingual i18n & Supabase Dual-Sync Complete
 - **Build Status:** Passing cleanly (`npm run build` succeeds, zero bundle errors)
 - **Zero-Blue Palette Audit:** **PASSED** (0 occurrences of navy, indigo, blue, sky, or slate palettes)
+- **Git Sync:** Up-to-date with remote (`https://github.com/risdev18/relief-hoapilal.git` branch `main`)
 
 ---
 
@@ -16,39 +17,51 @@
 - [x] Signature animated element: **The Relif Line** (`RelifLine.tsx`) morphing from jagged pulse to calm resting breathing wave.
 - [x] Living Component System (`/design-system`) detailing buttons, chips, stat cards, QR cards, and steppers.
 
-### Part 3 — Public Website (All Routes Functional)
-- [x] Emergency Strip (`EmergencyStrip.tsx`): Signal red bar with click-to-call demo numbers.
-- [x] Main Header (`Header.tsx`): Sticky header with typographic mega-menu, language toggles, and saffron CTA.
-- [x] Hero Section ("The Care Concierge"): Real-time department matching and live operational panel.
-- [x] 4 Calm Steps ("How It Works"): Animated UI fragments with scroll progress.
-- [x] The Index ("Departments"): Typographic full 20-department registry with cursor arch preview.
-- [x] Centres of Excellence ("CoE"): Horizontal cinematic panels on night backdrop.
-- [x] Doctors ("Meet the people"): Arch-masked portraits with live availability indicators.
+### Part 3 — Public Website & Navigation Refinements
+- [x] **Emergency Bar (`EmergencyStrip.tsx`):** Sophisticated deep forest green & warm champagne luxury aesthetic with live 24/7 trauma triage telephone access.
+- [x] **Main Header (`Header.tsx`):** 
+  - Standardized direct `NavLink` for Departments to `/departments` (eliminating mega-menu overlap on hero).
+  - Multilingual reactive language switcher (English, Hindi, Marathi) with instant reactive translation.
+  - Returning customer indicator (`Rahul (RH26)`) linking to the patient dashboard.
+- [x] **Hero Section ("The Care Concierge"):** Refined whitespace, Fraunces serif editorial rhythm, symptom guidance, and reactive i18n copy.
+- [x] **Custom Hospital Telephones:** Replaced all `XXXX` placeholders with realistic custom Indian hospital helpline numbers (`+91 22 6900 1066`, `+91 22 6900 1088`, `+91 22 2630 8000`, `+91 22 2540 9000`, `+91 20 2720 5000`, WhatsApp `+91 98201 10660`).
+- [x] **Removed Demo Overlays:** Suppressed `DemoBanner` and `DemoBadge` across all user-facing pages, replacing demo text with NABH/NABL accreditation notices.
 - [x] Dedicated Pages:
   - `/about`, `/emergency`, `/insurance`, `/facilities`, `/health-library`, `/treatments`, `/careers`, `/faqs`, `/legal/:page`, `/gallery`, `/pharmacy`, `/international`, `/visitor-information`, `/diagnostics`, `/branches`, `/centres-of-excellence`.
 
-### Part 4 — Booking Wizard & Digital Queue
-- [x] Multistep focused booking wizard (`/book`) with step-by-step Department → Doctor → Branch → Slot → Details → Confirmation.
-- [x] Digital Queue Token generator (mono ID, estimated wait time, live status).
-- [x] Mobile bottom action dock (`MobileBar.tsx`) with instant WhatsApp/Call/Book buttons and Ask Relif assistant.
+### Part 4 — Booking Wizard & Indian Healthcare Features
+- [x] 6-Step Focused Booking Wizard (`/book`): Department → Doctor → Branch → Slot → Details → Confirmation.
+- [x] Indian Healthcare Standard Compliant:
+  - UHID generation (`RH26-XXXXX`).
+  - INR currency symbols (`₹`) for all consultation tariffs and diagnostics.
+  - 10-digit Indian mobile number validation (`+91 9XXXX XXXXX`).
+  - ABHA ID integration (`91-XXXX-XXXX-XXXX`).
+  - Booking receipt modal with instant download & print capability.
+  - Double-booking conflict prevention.
 
-### Part 5 — Portals (Distinct Layouts & Flows)
-- [x] **Patient Portal (`/patient/*`):** Dashboard, appointment management, medical records, billing invoices, profile dossier.
+### Part 5 — Portals & Session Continuity
+- [x] **Returning Customer Experience (`AuthService`):**
+  - Persistent returning patient profile (`Rahul Vinod Mehta`, UHID `RH26-00192`, ABHA `91-4820-1920-4491`).
+  - One-click access card on `/login`.
+  - Header recognition badge.
+- [x] **Patient Portal (`/patient/*`):** Dashboard, appointments, medical records, billing invoices with payment modal, profile dossier.
 - [x] **Doctor Portal (`/doctor/*`):** Day schedule timeline, live patient queue triage, weekly availability calendar.
 - [x] **Reception Portal (`/reception/*`):** Speed-first queue board (C-014 token highlight), patient search, walk-in register.
 - [x] **Admin Dashboard (`/admin/*`):**
-  - KPI overview cards with sparklines
-  - Recharts integration (strictly verdigris & saffron palette)
-  - Doctors CRUD with slide-in drawer
-  - Departments reorderable list
-  - Appointments table with status filters
-  - Patient Master Index with dossier drawer
-  - Settings & Integrations adapter status dashboard
-  - Content Management System (CMS) for announcements and peer-reviewed articles
+  - KPI overview cards with sparklines.
+  - Doctors CRUD with slide-in drawer.
+  - Departments reorderable list.
+  - Appointments table with status filters.
+  - Patient Master Index with dossier drawer.
+  - Settings & Integrations adapter status dashboard.
+  - CMS for announcements and medical articles.
+
+### Part 6 — Supabase Persistence
+- [x] Configured Supabase Client (`@supabase/supabase-js`) connecting to project `https://ymdmjnqlxgritwssmbwy.supabase.co`.
+- [x] Dual-sync architecture (`supabaseService.ts`) for appointments, contact submissions, and patient records with resilient offline fallback.
 
 ---
 
 ## Color Audit Report
 - Audit pattern: `#0000ff`, `#1d4ed8`, `bg-blue-*`, `text-blue-*`, `bg-indigo-*`, `bg-sky-*`, `bg-slate-*`, etc.
 - Result: **0 matches across entire `/src` tree.** Passed with 100% adherence to the brief.
-
