@@ -23,6 +23,13 @@
     font-size: 16px;
   }
 
+  /* Television & 4K Ultra-Wide Screen Scaling (1920px+) */
+  @media screen and (min-width: 1920px) {
+    html {
+      font-size: 18px;
+    }
+  }
+
   body {
     @apply bg-paper text-ink font-sans;
     background-color: var(--paper);
@@ -120,7 +127,7 @@
 @layer components {
   /* Section containers */
   .section-container {
-    @apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12;
+    @apply max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 3xl:max-w-[1800px] 3xl:px-16;
   }
 
   .section-padding {
