@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge, DemoBadge, Input } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
 import { cn, getInitials } from '@/utils';
+import { AuthService } from '@/services/authService';
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 interface PersonalInfo {
@@ -140,11 +141,31 @@ function SectionCard({
 // ── Main Component ────────────────────────────────────────────────────────────
 export function PatientProfile() {
   const { msg: toastMsg, show: showToast } = useToast();
+  const activePatient = AuthService.getActivePatient();
+
+  const initialPersonal: PersonalInfo = {
+    fullName: activePatient?.fullName || activePatient?.name || 'Rahul Mehta',
+    dob: activePatient?.dob || '1990-01-01',
+    gender: activePatient?.gender || 'Male',
+    bloodGroup: activePatient?.bloodGroup || 'B+',
+  };
+
+  const initialContact: ContactInfo = {
+    phone: activePatient?.phone || '+91 98200 00000',
+    email: activePatient?.email || 'patient@example.com',
+    address: 'Mumbai, Maharashtra',
+  };
+
+  const initialEmergency: EmergencyContact = {
+    name: activePatient?.emergencyContact?.split(' (')[0] || 'Sunita Mehta',
+    relation: 'Family Contact',
+    phone: activePatient?.emergencyContact?.match(/\(([^)]+)\)/)?.[1] || '+91 98201 54321',
+  };
 
   // Form states
-  const [personal,   setPersonal]   = useState<PersonalInfo>(DEMO_PERSONAL);
-  const [contact,    setContact]    = useState<ContactInfo>(DEMO_CONTACT);
-  const [emergency,  setEmergency]  = useState<EmergencyContact>(DEMO_EMERGENCY);
+  const [personal,   setPersonal]   = useState<PersonalInfo>(initialPersonal);
+  const [contact,    setContact]    = useState<ContactInfo>(initialContact);
+  const [emergency,  setEmergency]  = useState<EmergencyContact>(initialEmergency);
 
   // Edit modes
   const [editPersonal,  setEditPersonal]  = useState(false);
@@ -152,15 +173,27 @@ export function PatientProfile() {
   const [editEmergency, setEditEmergency] = useState(false);
 
   // Draft states
-  const [draftPersonal,  setDraftPersonal]  = useState<PersonalInfo>(DEMO_PERSONAL);
-  const [draftContact,   setDraftContact]   = useState<ContactInfo>(DEMO_CONTACT);
-  const [draftEmergency, setDraftEmergency] = useState<EmergencyContact>(DEMO_EMERGENCY);
+  const [draftPersonal,  setDraftPersonal]  = useState<PersonalInfo>(initialPersonal);
+  const [draftContact,   setDraftContact]   = useState<ContactInfo>(initialContact);
+  const [draftEmergency, setDraftEmergency] = useState<EmergencyContact>(initialEmergency);
 
   function handleSave(section: 'personal' | 'contact' | 'emergency') {
-    if (section === 'personal')  { setPersonal(draftPersonal);   setEditPersonal(false);  }
-    if (section === 'contact')   { setContact(draftContact);     setEditContact(false);   }
-    if (section === 'emergency') { setEmergency(draftEmergency); setEditEmergency(false); }
-    showToast('Demo — changes are not persisted. Data resets on refresh.');
+    if (section === 'personal')  {
+      setPersonal(draftPersonal);
+      setEditPersonal(false);
+      AuthService.updatePatientProfile({ fullName: draftPersonal.fullName, bloodGroup: draftPersonal.bloodGroup, gender: draftPersonal.gender, dob: draftPersonal.dob });
+    }
+    if (section === 'contact')   {
+      setContact(draftContact);
+      setEditContact(false);
+      AuthService.updatePatientProfile({ phone: draftContact.phone, email: draftContact.email });
+    }
+    if (section === 'emergency') {
+      setEmergency(draftEmergency);
+      setEditEmergency(false);
+      AuthService.updatePatientProfile({ emergencyContact: `${draftEmergency.name} (${draftEmergency.phone})` });
+    }
+    showToast('Patient profile updated successfully.');
   }
 
   function handleCancel(section: 'personal' | 'contact' | 'emergency') {
@@ -169,7 +202,8 @@ export function PatientProfile() {
     if (section === 'emergency') { setDraftEmergency(emergency); setEditEmergency(false); }
   }
 
-  const uhid = 'RH26847231';
+  const uhid = activePatient?.uhid || 'RH26-00192';
+  const abhaId = activePatient?.abhaId || '91-4820-1920-4491';
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">

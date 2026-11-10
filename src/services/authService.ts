@@ -225,6 +225,25 @@ export class AuthService {
   }
 
   /**
+   * Update active patient profile fields
+   */
+  static updatePatientProfile(data: Partial<PatientUser>): PatientUser | null {
+    const current = this.getActivePatient();
+    if (!current) return null;
+    const updated: PatientUser = {
+      ...current,
+      ...data,
+      fullName: data.fullName || current.fullName,
+      name: data.fullName || current.name,
+    };
+    try {
+      localStorage.setItem(SESSION_KEY, JSON.stringify(updated));
+      window.dispatchEvent(new Event('relif_auth_state_changed'));
+    } catch {}
+    return updated;
+  }
+
+  /**
    * Logout Active Patient
    */
   static async logoutPatient(): Promise<void> {

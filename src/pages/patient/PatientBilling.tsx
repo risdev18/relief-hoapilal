@@ -13,6 +13,9 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge, DemoBadge, StatCard } from '@/components/ui';
 import { cn } from '@/utils';
+import { AuthService } from '@/services/authService';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/config/constants';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type InvoiceStatus = 'paid' | 'pending' | 'cancelled';
@@ -203,8 +206,12 @@ export function PatientBilling() {
     showToast(`Payment for invoice ${id} completed successfully.`);
   }
 
-  const totalPaid    = DEMO_INVOICES.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0);
-  const totalPending = DEMO_INVOICES.filter(i => i.status === 'pending').reduce((s, i) => s + i.amount, 0);
+  const activePatient = AuthService.getActivePatient();
+  const isDemo = activePatient?.email?.toLowerCase().includes('rahul');
+  const invoices = isDemo ? DEMO_INVOICES : [];
+
+  const totalPaid    = invoices.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0);
+  const totalPending = invoices.filter(i => i.status === 'pending').reduce((s, i) => s + i.amount, 0);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -235,89 +242,69 @@ export function PatientBilling() {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="font-display text-4xl font-semibold text-ink">
-          Billing & payments.
+          Billing & Payments
         </h1>
-        <p className="text-ink-soft mt-1">View invoices and manage your payments.</p>
+        <p className="text-ink-soft mt-1">
+          {activePatient ? `UHID: ${activePatient.uhid} · ${activePatient.fullName}` : 'View invoices and manage payments'}
+        </p>
       </motion.div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Total paid" value={`₹${totalPaid.toLocaleString('en-IN')}`} isDemo />
-        <StatCard label="Pending" value={`₹${totalPending.toLocaleString('en-IN')}`} isDemo />
-        <StatCard label="Invoices" value={DEMO_INVOICES.length} isDemo />
+        <StatCard label="Total Paid" value={`₹${totalPaid.toLocaleString('en-IN')}`} />
+        <StatCard label="Pending Due" value={`₹${totalPending.toLocaleString('en-IN')}`} />
+        <StatCard label="Invoices Issued" value={invoices.length} />
       </div>
 
-      {/* Invoice table */}
+      {/* Invoice table or Clean Zero State */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.15 }}
         className="card overflow-hidden"
       >
-        {/* Table header */}
-        <div className="hidden md:grid grid-cols-[1fr_120px_2fr_100px_120px_140px] gap-3 px-5 py-3 bg-bone border-b border-sage-light text-xs font-medium text-ink-soft uppercase tracking-wide">
-          <span>Invoice #</span>
-          <span>Date</span>
-          <span>Description</span>
-          <span className="text-right">Amount</span>
-          <span>Status</span>
-          <span className="text-right">Actions</span>
-        </div>
-
-        {/* Rows */}
-        <div className="divide-y divide-sage-light">
-          {DEMO_INVOICES.map((inv, i) => (
-            <motion.div
-              key={inv.id}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.1 + i * 0.07 }}
-              className="grid grid-cols-1 md:grid-cols-[1fr_120px_2fr_100px_120px_140px] gap-2 md:gap-3 px-5 py-4 items-center hover:bg-bone/50 transition-colors"
-            >
-              {/* Invoice # */}
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs text-ink-soft">{inv.id}</span>
-                <DemoBadge />
-              </div>
-
-              {/* Date */}
-              <span className="text-sm text-ink-soft">{inv.date}</span>
-
-              {/* Description */}
-              <span className="text-sm text-ink font-medium">{inv.description}</span>
-
-              {/* Amount */}
-              <span className="text-sm font-semibold text-ink md:text-right">
-                ₹{inv.amount.toLocaleString('en-IN')}
-              </span>
-
-              {/* Status */}
-              <InvoiceStatusChip status={inv.status} />
-
-              {/* Actions */}
-              <div className="flex gap-2 md:justify-end flex-wrap">
-                {inv.status === 'pending' && (
-                  <button
-                    onClick={() => setPayInvoice(inv)}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium bg-saffron text-ink hover:bg-[var(--saffron-deep)] rounded-pill px-3 py-1.5 transition-colors"
-                  >
-                    <CreditCard size={11} />
-                    Pay Now
-                  </button>
-                )}
-                {inv.status === 'paid' && (
-                  <button
-                    onClick={() => showToast('Demo — PDF receipt generation is simulated.')}
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-verdigris hover:text-verdigris-deep border border-sage rounded-pill px-2.5 py-1 hover:border-verdigris transition-colors"
-                  >
-                    <Download size={11} />
-                    Receipt
-                  </button>
-                )}
-              </div>
-            </motion.div>
-          ))}
-        </div>
+        {invoices.length > 0 ? (
+          <>
+            {/* Table header */}
+            <div className="hidden md:grid grid-cols-[1fr_120px_2fr_100px_120px_140px] gap-3 px-5 py-3 bg-bone border-b border-sage-light text-xs font-medium text-ink-soft uppercase tracking-wide">
+              <span>Invoice #</span>
+              <span>Date</span>
+              <span>Description</span>
+              <span className="text-right">Amount</span>
+              <span>Status</span>
+              <span className="text-right">Actions</span>
+            </div>
+            <ul className="divide-y divide-sage-light">
+              {invoices.map(inv => (
+                <li key={inv.id} className="p-4 md:grid md:grid-cols-[1fr_120px_2fr_100px_120px_140px] gap-3 items-center">
+                  <span className="font-mono text-xs font-bold text-ink">{inv.id}</span>
+                  <span className="text-xs text-ink-soft">{inv.date}</span>
+                  <span className="text-sm font-medium text-ink">{inv.description}</span>
+                  <span className="font-mono text-sm font-bold text-ink md:text-right">₹{inv.amount.toLocaleString('en-IN')}</span>
+                  <div><InvoiceStatusChip status={inv.status} /></div>
+                  <div className="md:text-right">
+                    {inv.status === 'pending' && (
+                      <Button size="sm" onClick={() => setPayInvoice(inv)} className="bg-saffron text-ink">Pay Now</Button>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : (
+          <div className="p-12 text-center space-y-3">
+            <Receipt size={32} className="mx-auto text-sage" />
+            <h3 className="font-display text-lg font-bold text-ink">No Pending or Past Invoices</h3>
+            <p className="text-sm text-ink-soft max-w-md mx-auto">
+              Your hospital account balance is completely clear. Any upcoming OPD consultation fees, lab investigations, or pharmacy orders will generate transparent, downloadable GST receipts here.
+            </p>
+            <div className="pt-2">
+              <Link to={ROUTES.book}>
+                <Button size="sm" variant="primary" className="bg-verdigris text-white">Book Consultation</Button>
+              </Link>
+            </div>
+          </div>
+        )}
       </motion.div>
     </div>
   );

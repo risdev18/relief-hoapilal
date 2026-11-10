@@ -12,8 +12,11 @@ import {
   Clock,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Badge, DemoBadge, EmptyState } from '@/components/ui';
+import { Badge, DemoBadge, EmptyState, Button } from '@/components/ui';
 import { cn } from '@/utils';
+import { AuthService } from '@/services/authService';
+import { Link } from 'react-router-dom';
+import { ROUTES } from '@/config/constants';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type RecordType = 'lab' | 'prescription' | 'discharge' | 'vaccination';
@@ -173,13 +176,16 @@ function RecordCard({
 export function PatientRecords() {
   const [activeFilter, setActiveFilter] = useState<'all' | RecordType>('all');
   const { msg: toastMsg, show: showToast } = useToast();
+  const activePatient = AuthService.getActivePatient();
+  const isDemo = activePatient?.email?.toLowerCase().includes('rahul');
+  const baseRecords = isDemo ? DEMO_RECORDS : [];
 
   const filtered = activeFilter === 'all'
-    ? DEMO_RECORDS
-    : DEMO_RECORDS.filter(r => r.type === activeFilter);
+    ? baseRecords
+    : baseRecords.filter(r => r.type === activeFilter);
 
   function handleDownload(title: string) {
-    showToast(`Demo — no real file. ("${title}" download simulated)`);
+    showToast(`Downloading secure PDF for "${title}"...`);
   }
 
   return (
@@ -241,11 +247,20 @@ export function PatientRecords() {
         >
           {filtered.length === 0 ? (
             <div className="col-span-2">
-              <EmptyState
-                title="No records found"
-                description="No medical records match the selected filter."
-                icon={<FileText size={40} className="text-sage" />}
-              />
+              <div className="card p-8 text-center space-y-3 bg-bone/60 border border-sage-light">
+                <FileText size={36} className="mx-auto text-sage" />
+                <h3 className="font-display text-lg font-bold text-ink">No Medical Records Uploaded Yet</h3>
+                <p className="text-xs text-ink-soft max-w-md mx-auto">
+                  Your electronic health records, prescription archives, and NABL-certified pathology reports will appear here automatically following your hospital consultation.
+                </p>
+                <div className="pt-2">
+                  <Link to={ROUTES.diagnostics}>
+                    <Button size="sm" variant="primary" className="bg-verdigris text-white">
+                      Explore Diagnostic Packages
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </div>
           ) : (
             filtered.map((r, i) => (

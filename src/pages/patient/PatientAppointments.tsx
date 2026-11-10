@@ -15,6 +15,7 @@ import { Button, Badge, DemoBadge, EmptyState, QRCard } from '@/components/ui';
 import { cn, getStatusLabel } from '@/utils';
 import { ROUTES } from '@/config/constants';
 import { SupabaseService, SupabaseAppointmentRecord } from '@/services/supabaseService';
+import { AuthService } from '@/services/authService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type AppointmentStatus = 'confirmed' | 'booked' | 'completed' | 'cancelled' | 'rescheduled';
@@ -257,7 +258,7 @@ function AppointmentRow({
 export function PatientAppointments() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [qrAppt, setQrAppt]     = useState<Appointment | null>(null);
-  const [upcomingList, setUpcomingList] = useState<Appointment[]>(UPCOMING);
+  const [upcomingList, setUpcomingList] = useState<Appointment[]>([]);
   const [cancelledList, setCancelledList] = useState<Appointment[]>([]);
   const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState('');
@@ -266,12 +267,30 @@ export function PatientAppointments() {
 
   const fetchLiveList = async () => {
     try {
+      const activePatient = AuthService.getActivePatient();
+      const isDemo = activePatient?.email?.toLowerCase().includes('rahul');
       const records = await SupabaseService.getAppointments();
-      if (records && records.length > 0) {
-        const liveUpcoming: Appointment[] = [];
-        const liveCancelled: Appointment[] = [];
 
-        records.forEach((r: SupabaseAppointmentRecord) => {
+      const patientEmail = (activePatient?.email || '').toLowerCase();
+      const patientPhone = (activePatient?.phone || '').replace(/\D/g, '');
+      const patientName = (activePatient?.fullName || activePatient?.name || '').toLowerCase();
+
+      const liveUpcoming: Appointment[] = [];
+      const liveCancelled: Appointment[] = [];
+
+      records.forEach((r: SupabaseAppointmentRecord) => {
+        const rEmail = (r.patient_email || '').toLowerCase();
+        const rPhone = (r.patient_phone || '').replace(/\D/g, '');
+        const rName = (r.patient_name || '').toLowerCase();
+
+        // Match patient's appointment
+        const matchesUser = isDemo || (
+          (patientEmail && rEmail === patientEmail) ||
+          (patientPhone && rPhone && (rPhone.includes(patientPhone) || patientPhone.includes(rPhone))) ||
+          (patientName && rName === patientName)
+        );
+
+        if (matchesUser) {
           const item: Appointment = {
             id: r.appointment_id,
             doctor: r.doctor_name,
@@ -286,19 +305,17 @@ export function PatientAppointments() {
           } else {
             liveUpcoming.push(item);
           }
-        });
+        }
+      });
 
-        // Merge with defaults
-        const upMap = new Map<string, Appointment>();
-        liveUpcoming.forEach(a => upMap.set(a.id, a));
-        UPCOMING.forEach(a => {
-          if (!upMap.has(a.id)) upMap.set(a.id, a);
-        });
-        setUpcomingList(Array.from(upMap.values()));
-        setCancelledList(liveCancelled);
+      if (isDemo && liveUpcoming.length === 0) {
+        setUpcomingList(UPCOMING);
+      } else {
+        setUpcomingList(liveUpcoming);
       }
+      setCancelledList(liveCancelled);
     } catch {
-      // Keep static list
+      setUpcomingList([]);
     }
   };
 

@@ -135,6 +135,15 @@ export function App() {
             <Route path="/careers"                     element={<CareersPage />} />
             <Route path="/careers/:id"                 element={<CareersPage />} />
             <Route path="/legal/:page"                 element={<LegalPage />} />
+            <Route path="/legal"                       element={<LegalPage />} />
+            <Route path="/terms"                       element={<LegalPage />} />
+            <Route path="/terms-of-use"                element={<LegalPage />} />
+            <Route path="/terms-and-conditions"        element={<LegalPage />} />
+            <Route path="/privacy"                     element={<LegalPage />} />
+            <Route path="/privacy-policy"              element={<LegalPage />} />
+            <Route path="/disclaimer"                  element={<LegalPage />} />
+            <Route path="/patient-rights"              element={<LegalPage />} />
+            <Route path="/grievance"                   element={<LegalPage />} />
             <Route path="/faqs"                        element={<FAQsPage />} />
             <Route path="/design-system"               element={<DesignSystemPage />} />
             <Route path="/demo-guide"                  element={<DemoGuidePage />} />
