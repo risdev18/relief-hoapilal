@@ -8,15 +8,16 @@
   "nav": {
     "departments": "Departments",
     "doctors": "Doctors",
-    "coe": "Centres of Excellence",
+    "coe": "Centres",
     "treatments": "Treatments",
     "diagnostics": "Diagnostics",
     "services": "Services",
-    "healthLibrary": "Health Library",
+    "healthLibrary": "Library",
     "about": "About",
     "contact": "Contact",
     "bookAppointment": "Book Appointment",
-    "login": "Patient Login",
+    "login": "Sign In",
+    "register": "Register",
     "portal": "Portal"
   },
   "hero": {

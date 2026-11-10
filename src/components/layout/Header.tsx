@@ -1,11 +1,11 @@
 // Header — International Luxury Multispecialty Healthcare Navigation
 // Refined typography, glassmorphism surface, organic brandmark, champagne gold accents
-// Multilingual reactive switching (EN, HI, MR) + Returning Patient recognition
+// Multilingual reactive switching (EN, HI, MR) + Returning Patient recognition + Supabase Auth controls
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Menu, X, User, Calendar, ArrowRight, LogOut, LogIn } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '@/i18n';
 import { cn } from '@/utils';
@@ -17,12 +17,12 @@ function RelifWordmark({ className }: { className?: string }) {
   return (
     <Link
       to={ROUTES.home}
-      className={cn('inline-flex items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-verdigris rounded-xl p-1', className)}
+      className={cn('inline-flex items-center gap-2.5 group focus:outline-none focus-visible:ring-2 focus-visible:ring-verdigris rounded-xl p-0.5 flex-shrink-0', className)}
       aria-label="Relif International Hospital — Home"
     >
       {/* Handcrafted Emblem with botanical vein + cross */}
-      <div className="relative w-10 h-10 rounded-2xl bg-gradient-to-br from-verdigris to-verdigris-deep flex items-center justify-center shadow-warm-sm border border-verdigris/30 group-hover:shadow-verdigris transition-all duration-300">
-        <svg viewBox="0 0 24 24" fill="none" className="w-5 h-5 text-white transform group-hover:scale-105 transition-transform duration-300">
+      <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-verdigris to-verdigris-deep flex items-center justify-center shadow-warm-sm border border-verdigris/30 group-hover:shadow-verdigris transition-all duration-300">
+        <svg viewBox="0 0 24 24" fill="none" className="w-4 h-4 text-white transform group-hover:scale-105 transition-transform duration-300">
           <path
             d="M12 4V20M4 12H20"
             stroke="currentColor"
@@ -34,15 +34,15 @@ function RelifWordmark({ className }: { className?: string }) {
       </div>
 
       <div className="flex flex-col">
-        <div className="flex items-baseline gap-1.5">
-          <span className="font-display font-bold text-2xl tracking-tight text-ink group-hover:text-verdigris-deep transition-colors">
+        <div className="flex items-baseline gap-1">
+          <span className="font-display font-bold text-xl tracking-tight text-ink group-hover:text-verdigris-deep transition-colors">
             relif
           </span>
-          <span className="font-mono text-[9px] tracking-widest text-saffron uppercase font-bold px-1.5 py-0.2 rounded bg-saffron/10 border border-saffron/20">
+          <span className="font-mono text-[8px] tracking-widest text-saffron uppercase font-bold px-1 py-0.2 rounded bg-saffron/10 border border-saffron/20">
             Care
           </span>
         </div>
-        <span className="font-mono text-[10px] tracking-[0.22em] uppercase text-ink-soft/80 -mt-1 font-medium">
+        <span className="font-mono text-[9px] tracking-[0.2em] uppercase text-ink-soft/80 -mt-1 font-medium">
           Multispecialty
         </span>
       </div>
@@ -95,29 +95,34 @@ export function Header() {
     changeLanguage(code);
   };
 
+  const handleSignOut = () => {
+    AuthService.logoutPatient();
+    setActivePatient(null);
+  };
+
   return (
     <header
       ref={headerRef}
       className={cn(
         'sticky top-0 z-header w-full transition-all duration-300',
         isScrolled
-          ? 'bg-paper/95 backdrop-blur-md border-b border-sage-light shadow-warm-sm py-2'
-          : 'bg-paper/90 backdrop-blur-sm border-b border-sage-light/40 py-3'
+          ? 'bg-paper/95 backdrop-blur-md border-b border-sage-light shadow-warm-sm py-1.5'
+          : 'bg-paper/90 backdrop-blur-sm border-b border-sage-light/40 py-2.5'
       )}
     >
       <div className="section-container">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           {/* Brand Identity */}
           <RelifWordmark />
 
-          {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-1 bg-bone/80 backdrop-blur-sm p-1 rounded-full border border-sage-light/70 shadow-sm" aria-label="Main navigation">
+          {/* Desktop Navigation Links (Compact & Beautiful) */}
+          <nav className="hidden xl:flex items-center gap-0.5 bg-bone/80 backdrop-blur-sm p-1 rounded-full border border-sage-light/70 shadow-sm" aria-label="Main navigation">
             {NAV_ITEMS.map(item => (
               <NavLink
                 key={item.key}
                 to={item.href}
                 className={({ isActive }) => cn(
-                  'px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 block whitespace-nowrap',
+                  'px-2.5 py-1 rounded-full text-[12.5px] font-medium transition-all duration-200 block whitespace-nowrap',
                   isActive
                     ? 'bg-paper text-verdigris shadow-warm-xs font-semibold'
                     : 'text-ink-soft hover:text-ink hover:bg-paper/60'
@@ -128,8 +133,8 @@ export function Header() {
             ))}
           </nav>
 
-          {/* Right Action Suite: Language + Patient Portal + Primary Booking CTA */}
-          <div className="flex items-center gap-2.5">
+          {/* Right Action Suite: Language + Sign In / User Profile + Primary Booking CTA */}
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
             {/* Language Switch (Reactive i18n) */}
             <div className="hidden lg:flex items-center bg-bone border border-sage-light/80 rounded-full p-0.5 text-xs shadow-warm-xs">
               {LANGUAGES.map((lang) => {
@@ -139,7 +144,7 @@ export function Header() {
                     key={lang.code}
                     onClick={() => handleLanguageChange(lang.code as 'en' | 'hi' | 'mr')}
                     className={cn(
-                      'font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all duration-200',
+                      'font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all duration-200',
                       isActive
                         ? 'bg-verdigris text-white shadow-xs'
                         : 'text-ink-soft hover:text-verdigris'
@@ -154,40 +159,40 @@ export function Header() {
 
             {/* Patient Portal / Login & Registration Options */}
             {activePatient ? (
-              <div className="hidden sm:flex items-center gap-1.5">
+              <div className="hidden sm:flex items-center gap-1">
                 <Link
                   to={ROUTES.patientDashboard}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris bg-mint/50 hover:bg-mint transition-colors px-3 py-1.5 rounded-full border border-verdigris/30 shadow-warm-xs"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris bg-mint/50 hover:bg-mint transition-colors px-2.5 py-1 rounded-full border border-verdigris/30 shadow-warm-xs"
                   title={`Logged in as ${activePatient.fullName} (${activePatient.uhid})`}
                 >
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                  <User size={13} className="text-verdigris" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <User size={12} className="text-verdigris" />
                   <span className="font-mono font-medium">{activePatient.fullName.split(' ')[0]}</span>
-                  <span className="text-[10px] text-verdigris-deep font-mono opacity-80">({activePatient.uhid})</span>
                 </Link>
                 <button
                   type="button"
-                  onClick={() => AuthService.logoutPatient()}
-                  className="text-[11px] font-mono text-ink-soft hover:text-signal transition-colors px-2 py-1"
+                  onClick={handleSignOut}
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-soft hover:text-signal transition-colors px-2 py-1 rounded-full hover:bg-bone"
                   title="Sign out / Switch account"
                 >
-                  Exit
+                  <LogOut size={12} />
+                  <span>Exit</span>
                 </button>
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-1">
                 <Link
                   to={ROUTES.login}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-3 py-1.5 rounded-full hover:bg-bone border border-transparent hover:border-sage-light"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-2.5 py-1 rounded-full hover:bg-bone border border-sage-light/70 shadow-warm-xs"
                 >
-                  <User size={14} className="text-verdigris" />
-                  <span>{t('nav.login')}</span>
+                  <LogIn size={13} className="text-verdigris" />
+                  <span>Sign In</span>
                 </Link>
                 <Link
                   to={ROUTES.register}
-                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2.5 py-1 rounded-full border border-verdigris/25 transition-colors"
+                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2 py-1 rounded-full border border-verdigris/25 transition-colors"
                 >
-                  New Patient
+                  Register
                 </Link>
               </div>
             )}
@@ -195,27 +200,25 @@ export function Header() {
             {/* Luxury Primary CTA: Champagne / Saffron Gold Elevation */}
             <Link
               to={ROUTES.book}
-              className="relative group inline-flex items-center gap-2 text-xs font-semibold px-4 sm:px-5 py-2.5 rounded-full transition-all duration-300 shadow-warm hover:shadow-saffron hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
+              className="relative group inline-flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 rounded-full transition-all duration-300 shadow-warm hover:shadow-saffron hover:-translate-y-0.5 active:translate-y-0 overflow-hidden flex-shrink-0"
               style={{
                 background: 'linear-gradient(135deg, #F0A22E 0%, #D4861A 100%)',
                 color: '#10261F',
               }}
             >
-              <span className="relative z-10 flex items-center gap-1.5">
-                <Calendar size={14} className="opacity-80" />
-                <span>{t('nav.bookAppointment')}</span>
-              </span>
+              <Calendar size={13} className="opacity-90" />
+              <span className="whitespace-nowrap">{t('nav.bookAppointment')}</span>
               <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             </Link>
 
             {/* Mobile Hamburger Menu Toggle */}
             <button
-              className="xl:hidden p-2 rounded-xl text-ink hover:bg-bone transition-colors ml-1"
+              className="xl:hidden p-1.5 rounded-xl text-ink hover:bg-bone transition-colors ml-0.5"
               onClick={() => setIsMobileOpen(!isMobileOpen)}
               aria-label={isMobileOpen ? 'Close menu' : 'Open menu'}
               aria-expanded={isMobileOpen}
             >
-              {isMobileOpen ? <X size={22} /> : <Menu size={22} />}
+              {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -234,7 +237,7 @@ export function Header() {
             <div className="section-container flex-1 py-6 space-y-6">
               {/* Language switcher inside mobile menu */}
               <div className="flex items-center justify-between pb-4 border-b border-sage-light">
-                <span className="text-xs font-mono text-ink-soft uppercase font-semibold">Select Language</span>
+                <span className="text-xs font-mono text-ink-soft uppercase font-semibold">Language</span>
                 <div className="flex items-center bg-bone border border-sage-light rounded-full p-1 text-xs">
                   {LANGUAGES.map((lang) => {
                     const isActive = (i18n.language || 'en').startsWith(lang.code);
@@ -287,22 +290,34 @@ export function Header() {
                   {t('nav.bookAppointment')}
                 </Link>
                 {activePatient ? (
-                  <Link
-                    to={ROUTES.patientDashboard}
-                    className="btn btn-secondary btn-lg w-full justify-center flex items-center gap-2"
-                    onClick={() => setIsMobileOpen(false)}
-                  >
-                    <User size={16} className="text-verdigris" />
-                    <span>Portal: {activePatient.fullName} ({activePatient.uhid})</span>
-                  </Link>
+                  <div className="space-y-2">
+                    <Link
+                      to={ROUTES.patientDashboard}
+                      className="btn btn-secondary btn-lg w-full justify-center flex items-center gap-2"
+                      onClick={() => setIsMobileOpen(false)}
+                    >
+                      <User size={16} className="text-verdigris" />
+                      <span>My Portal: {activePatient.fullName}</span>
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        handleSignOut();
+                        setIsMobileOpen(false);
+                      }}
+                      className="w-full text-center text-xs text-signal font-semibold py-2 hover:underline"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     <Link
                       to={ROUTES.login}
-                      className="btn btn-secondary btn-lg justify-center text-sm"
+                      className="btn btn-secondary btn-lg justify-center text-sm font-semibold"
                       onClick={() => setIsMobileOpen(false)}
                     >
-                      {t('nav.login')}
+                      Sign In
                     </Link>
                     <Link
                       to={ROUTES.register}

@@ -8,12 +8,12 @@ import { ROUTES, APP_CONFIG, LANGUAGES } from '@/config/constants';
 
 const FOOTER_LINKS = {
   'Patient Services': [
+    { label: 'Patient Portal Sign In', href: ROUTES.login },
+    { label: 'New Patient Registration', href: ROUTES.register },
     { label: 'Book Appointment',   href: ROUTES.book },
     { label: 'Download Reports',   href: ROUTES.patientRecords },
     { label: 'Pay Bill',           href: ROUTES.patientBilling },
-    { label: 'Teleconsult',        href: '#teleconsult' },
-    { label: 'Second Opinion',     href: '#second-opinion' },
-    { label: 'Home Sample',        href: '#home-sample' },
+    { label: 'Doctor Schedule',    href: ROUTES.doctors },
   ],
   'Hospital': [
     { label: 'About Relif',        href: ROUTES.about },
