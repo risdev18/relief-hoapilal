@@ -8,13 +8,16 @@
   "nav": {
     "departments": "Departments",
     "doctors": "Doctors",
+    "coe": "Centres of Excellence",
     "treatments": "Treatments",
+    "diagnostics": "Diagnostics",
     "services": "Services",
     "healthLibrary": "Health Library",
     "about": "About",
     "contact": "Contact",
     "bookAppointment": "Book Appointment",
-    "login": "Login"
+    "login": "Patient Login",
+    "portal": "Portal"
   },
   "hero": {
     "concierge": "The Care Concierge",

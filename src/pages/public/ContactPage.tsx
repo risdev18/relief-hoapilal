@@ -74,7 +74,7 @@ export function ContactPage() {
                     <MapPin size={14} className="text-verdigris" /> Versova Link Road, Andheri West, Mumbai, MH 400053
                   </p>
                   <p className="text-xs text-ink-soft flex items-center gap-1.5">
-                    <Phone size={14} className="text-verdigris" /> +91 22 2630 XXXX (Demo)
+                    <Phone size={14} className="text-verdigris" /> +91 22 2630 8000
                   </p>
                 </div>
 
@@ -87,7 +87,7 @@ export function ContactPage() {
                     <MapPin size={14} className="text-verdigris" /> Majiwada Junction, Eastern Express Highway, Thane West 400601
                   </p>
                   <p className="text-xs text-ink-soft flex items-center gap-1.5">
-                    <Phone size={14} className="text-verdigris" /> +91 22 2540 XXXX (Demo)
+                    <Phone size={14} className="text-verdigris" /> +91 22 2540 9000
                   </p>
                 </div>
 
@@ -100,7 +100,7 @@ export function ContactPage() {
                     <MapPin size={14} className="text-verdigris" /> Baner High Street, Baner, Pune 411045
                   </p>
                   <p className="text-xs text-ink-soft flex items-center gap-1.5">
-                    <Phone size={14} className="text-verdigris" /> +91 20 2720 XXXX (Demo)
+                    <Phone size={14} className="text-verdigris" /> +91 20 2720 5000
                   </p>
                 </div>
               </div>

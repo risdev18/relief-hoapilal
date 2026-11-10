@@ -26,7 +26,7 @@ export function MobileBottomBar() {
         </a>
         
         <a
-          href="https://wa.me/91XXXXXXXXXX"
+          href="https://wa.me/919820110660"
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-col items-center gap-1 py-3 text-ink-soft hover:text-verdigris transition-colors"

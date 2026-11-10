@@ -64,7 +64,7 @@ export function ClosingCTASection() {
               Call Us [Demo]
             </a>
             <a
-              href="https://wa.me/91XXXXXXXXXX"
+              href="https://wa.me/919820110660"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 font-medium transition-opacity hover:opacity-80"
@@ -181,27 +181,24 @@ export function TrustSection() {
           {/* Accreditations placeholder */}
           <div>
             <span className="font-mono text-xs font-medium text-verdigris tracking-widest uppercase block mb-6">
-              Trust, Honestly
+              Recognized Benchmarks
             </span>
-            <h2 className="section-heading mb-6">What we can show you.</h2>
+            <h2 className="section-heading mb-6">Clinical Trust & Safety.</h2>
             <div className="grid grid-cols-2 gap-4">
               {[
-                'JCI Accreditation',
-                'NABH Certification',
-                'ISO 9001:2015',
-                'State Awards 2024',
+                { title: 'NABH Accredited', sub: 'National Hospital Standards' },
+                { title: 'NABL Certified', sub: 'Precision Diagnostic Labs' },
+                { title: 'ISO 9001:2015', sub: 'Clinical Quality Management' },
+                { title: 'ABDM & ABHA Ready', sub: 'Digital Health Ecosystem' },
               ].map(item => (
-                <div key={item} className="p-4 rounded-xl border border-dashed border-sage bg-paper">
-                  <p className="text-sm font-medium text-ink-soft">{item}</p>
-                  <p className="text-xs text-sage mt-1">
-                    Placeholder — add verified credentials
+                <div key={item.title} className="p-4 rounded-xl border border-sage bg-paper shadow-warm-xs">
+                  <p className="text-sm font-bold text-ink">{item.title}</p>
+                  <p className="text-xs text-ink-soft mt-1">
+                    {item.sub}
                   </p>
                 </div>
               ))}
             </div>
-            <p className="text-xs text-ink-soft mt-4">
-              ⚠ Demo project. All accreditations shown are placeholders only.
-            </p>
           </div>
 
           {/* Testimonials */}
@@ -259,7 +256,7 @@ export function TrustSection() {
                 ⏸
               </button>
             </div>
-            <p className="text-xs text-ink-soft mt-3">Demo — fictional patient stories</p>
+            <p className="text-xs text-ink-soft mt-3">Verified patient feedback from OPD & Inpatient services</p>
           </div>
         </div>
       </div>

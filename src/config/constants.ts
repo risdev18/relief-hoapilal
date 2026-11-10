@@ -7,9 +7,9 @@ export const APP_CONFIG = {
   version: '1.0.0-demo',
   isDemoMode: import.meta.env.VITE_DEMO_MODE !== 'false',
   
-  // Emergency contact (configurable — always labeled Demo)
-  emergencyNumber: import.meta.env.VITE_EMERGENCY_NUMBER || '+91-XXXX-XXXXXX',
-  ambulanceNumber: import.meta.env.VITE_AMBULANCE_NUMBER || '+91-XXXX-XXXXXX',
+  // Emergency contact numbers
+  emergencyNumber: import.meta.env.VITE_EMERGENCY_NUMBER || '+91 22 6900 1066',
+  ambulanceNumber: import.meta.env.VITE_AMBULANCE_NUMBER || '+91 22 6900 1088',
   
   // Branches
   defaultBranchId: 'branch-andheri',

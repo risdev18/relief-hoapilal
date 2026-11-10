@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
 import { Search, ArrowRight, ShieldCheck, Sparkles, CheckCircle2, Clock, Phone, MapPin } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { RelifLine } from '@/components/ui/RelifLine';
 import { AvailabilityDot } from '@/components/ui';
 import { ROUTES } from '@/config/constants';
@@ -70,6 +71,7 @@ function getSuggestion(query: string): SearchResult | null {
 }
 
 export function HeroSection() {
+  const { t } = useTranslation();
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [query, setQuery] = useState('');
   const [suggestion, setSuggestion] = useState<SearchResult | null>(null);
@@ -115,7 +117,7 @@ export function HeroSection() {
             >
               <span className="w-2 h-2 rounded-full bg-verdigris animate-pulse" />
               <span className="font-mono text-[11px] font-semibold tracking-widest text-verdigris-deep uppercase">
-                The Care Concierge
+                {t('hero.concierge')}
               </span>
               <span className="text-sage text-xs">·</span>
               <span className="text-ink-soft text-xs font-medium">
@@ -131,13 +133,13 @@ export function HeroSection() {
               className="space-y-3"
             >
               <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold tracking-tight text-ink leading-[1.08]">
-                Tell us what hurts.{' '}
+                {t('hero.headline')}{' '}
                 <span className="block mt-1 font-normal italic text-verdigris">
-                  We will show you where to begin.
+                  {t('hero.subheadline')}
                 </span>
               </h1>
               <p className="text-base sm:text-lg text-ink-soft/90 max-w-xl font-normal leading-relaxed pt-2">
-                Describe your symptoms in natural language. Our clinical guidance engine routes you directly to accredited specialists without medical ambiguity.
+                {t('hero.description')}
               </p>
             </motion.div>
 

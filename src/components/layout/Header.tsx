@@ -1,12 +1,16 @@
 // Header — International Luxury Multispecialty Healthcare Navigation
 // Refined typography, glassmorphism surface, organic brandmark, champagne gold accents
+// Multilingual reactive switching (EN, HI, MR) + Returning Patient recognition
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, ChevronDown, User, Calendar, ShieldCheck, ArrowRight, Sparkles } from 'lucide-react';
+import { Menu, X, User, Calendar, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { changeLanguage } from '@/i18n';
 import { cn } from '@/utils';
-import { DEPARTMENTS, LANGUAGES, ROUTES } from '@/config/constants';
+import { LANGUAGES, ROUTES } from '@/config/constants';
+import { AuthService, PatientUser } from '@/services/authService';
 
 // ── Relif Luxury Wordmark ─────────────────────────────────────────────────
 function RelifWordmark({ className }: { className?: string }) {
@@ -46,84 +50,29 @@ function RelifWordmark({ className }: { className?: string }) {
   );
 }
 
-// ── Departments Mega-Menu ─────────────────────────────────────────────────
-function DepartmentsMegaMenu({ onClose }: { onClose: () => void }) {
-  const half = Math.ceil(DEPARTMENTS.length / 2);
-  const col1 = DEPARTMENTS.slice(0, half);
-  const col2 = DEPARTMENTS.slice(half);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 8, scale: 0.98 }}
-      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-      className="absolute top-full left-0 w-screen max-w-4xl bg-paper/98 backdrop-blur-xl border border-sage-light/80 rounded-2xl shadow-warm-xl mt-3 overflow-hidden z-dropdown"
-    >
-      <div className="p-7">
-        <div className="flex items-center justify-between pb-4 mb-4 border-b border-sage-light/60">
-          <div>
-            <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-verdigris">
-              Clinical Index
-            </span>
-            <h3 className="font-display text-xl font-bold text-ink">
-              Clinical Departments & Centres
-            </h3>
-          </div>
-          <Link
-            to={ROUTES.departments}
-            className="group flex items-center gap-1.5 text-xs font-semibold text-verdigris hover:text-verdigris-deep transition-colors px-3 py-1.5 rounded-full bg-mint/50 hover:bg-mint"
-            onClick={onClose}
-          >
-            <span>Explore full index (20 specialties)</span>
-            <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-          {[col1, col2].map((col, ci) => (
-            <div key={ci} className="space-y-0.5">
-              {col.map(dept => (
-                <Link
-                  key={dept.id}
-                  to={ROUTES.department(dept.slug)}
-                  onClick={onClose}
-                  className="flex items-center justify-between py-2 px-3 rounded-xl hover:bg-bone transition-all duration-200 group"
-                >
-                  <span className="text-sm font-medium text-ink-soft group-hover:text-ink group-hover:translate-x-1 transition-all">
-                    {dept.name}
-                  </span>
-                  <span className="text-[11px] font-mono text-sage opacity-0 group-hover:opacity-100 transition-opacity">
-                    View →
-                  </span>
-                </Link>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-    </motion.div>
-  );
-}
-
 // ── Navigation Configuration ──────────────────────────────────────────────
 const NAV_ITEMS = [
-  { label: 'Departments', href: ROUTES.departments, hasMegaMenu: true },
-  { label: 'Doctors',     href: ROUTES.doctors,     hasMegaMenu: false },
-  { label: 'Centres of Excellence', href: ROUTES.coe, hasMegaMenu: false },
-  { label: 'Treatments',  href: ROUTES.treatments,  hasMegaMenu: false },
-  { label: 'Diagnostics', href: ROUTES.diagnostics, hasMegaMenu: false },
-  { label: 'Health Library', href: ROUTES.healthLibrary, hasMegaMenu: false },
-  { label: 'About',       href: ROUTES.about,       hasMegaMenu: false },
-  { label: 'Contact',     href: ROUTES.contact,     hasMegaMenu: false },
+  { key: 'departments',    href: ROUTES.departments },
+  { key: 'doctors',        href: ROUTES.doctors },
+  { key: 'coe',            href: ROUTES.coe },
+  { key: 'treatments',     href: ROUTES.treatments },
+  { key: 'diagnostics',    href: ROUTES.diagnostics },
+  { key: 'healthLibrary',  href: ROUTES.healthLibrary },
+  { key: 'about',          href: ROUTES.about },
+  { key: 'contact',        href: ROUTES.contact },
 ] as const;
 
 export function Header() {
+  const { t, i18n } = useTranslation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const [activeMegaMenu, setActiveMegaMenu] = useState<string | null>(null);
+  const [activePatient, setActivePatient] = useState<PatientUser | null>(null);
   const location = useLocation();
   const headerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    setActivePatient(AuthService.getActivePatient());
+  }, [location]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -135,18 +84,11 @@ export function Header() {
 
   useEffect(() => {
     setIsMobileOpen(false);
-    setActiveMegaMenu(null);
   }, [location]);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (headerRef.current && !headerRef.current.contains(e.target as Node)) {
-        setActiveMegaMenu(null);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  const handleLanguageChange = (code: 'en' | 'hi' | 'mr') => {
+    changeLanguage(code);
+  };
 
   return (
     <header
@@ -155,7 +97,7 @@ export function Header() {
         'sticky top-0 z-header w-full transition-all duration-300',
         isScrolled
           ? 'bg-paper/95 backdrop-blur-md border-b border-sage-light shadow-warm-sm py-2'
-          : 'bg-paper/80 backdrop-blur-sm border-b border-sage-light/40 py-3'
+          : 'bg-paper/90 backdrop-blur-sm border-b border-sage-light/40 py-3'
       )}
     >
       <div className="section-container">
@@ -164,87 +106,73 @@ export function Header() {
           <RelifWordmark />
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-1 bg-bone/70 backdrop-blur-sm p-1 rounded-full border border-sage-light/60 shadow-sm" aria-label="Main navigation">
+          <nav className="hidden xl:flex items-center gap-1 bg-bone/80 backdrop-blur-sm p-1 rounded-full border border-sage-light/70 shadow-sm" aria-label="Main navigation">
             {NAV_ITEMS.map(item => (
-              <div key={item.label} className="relative">
-                {item.hasMegaMenu ? (
-                  <button
-                    className={cn(
-                      'flex items-center gap-1 px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200',
-                      activeMegaMenu === item.label
-                        ? 'bg-paper text-verdigris shadow-warm-sm'
-                        : 'text-ink-soft hover:text-ink hover:bg-paper/60'
-                    )}
-                    onClick={() => setActiveMegaMenu(activeMegaMenu === item.label ? null : item.label)}
-                    aria-expanded={activeMegaMenu === item.label}
-                    aria-haspopup="true"
-                  >
-                    <span>{item.label}</span>
-                    <ChevronDown
-                      size={13}
-                      className={cn('transition-transform duration-200 opacity-60', {
-                        'rotate-180 opacity-100 text-verdigris': activeMegaMenu === item.label,
-                      })}
-                    />
-                  </button>
-                ) : (
-                  <NavLink
-                    to={item.href}
-                    className={({ isActive }) => cn(
-                      'px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 block',
-                      isActive
-                        ? 'bg-paper text-verdigris shadow-warm-sm font-semibold'
-                        : 'text-ink-soft hover:text-ink hover:bg-paper/60'
-                    )}
-                  >
-                    {item.label}
-                  </NavLink>
+              <NavLink
+                key={item.key}
+                to={item.href}
+                className={({ isActive }) => cn(
+                  'px-3.5 py-1.5 rounded-full text-[13px] font-medium transition-all duration-200 block whitespace-nowrap',
+                  isActive
+                    ? 'bg-paper text-verdigris shadow-warm-xs font-semibold'
+                    : 'text-ink-soft hover:text-ink hover:bg-paper/60'
                 )}
-
-                {/* Mega-menu popup */}
-                <AnimatePresence>
-                  {item.hasMegaMenu && activeMegaMenu === item.label && (
-                    <DepartmentsMegaMenu onClose={() => setActiveMegaMenu(null)} />
-                  )}
-                </AnimatePresence>
-              </div>
+              >
+                {t(`nav.${item.key}`)}
+              </NavLink>
             ))}
           </nav>
 
           {/* Right Action Suite: Language + Patient Portal + Primary Booking CTA */}
           <div className="flex items-center gap-2.5">
-            {/* Language Switch */}
-            <div className="hidden lg:flex items-center bg-bone/60 border border-sage-light/70 rounded-full px-2 py-1 text-xs">
-              {LANGUAGES.map((lang, i) => (
-                <React.Fragment key={lang.code}>
+            {/* Language Switch (Reactive i18n) */}
+            <div className="hidden lg:flex items-center bg-bone border border-sage-light/80 rounded-full p-0.5 text-xs shadow-warm-xs">
+              {LANGUAGES.map((lang) => {
+                const isActive = (i18n.language || 'en').startsWith(lang.code);
+                return (
                   <button
-                    onClick={() => {
-                      localStorage.setItem('relif_language', lang.code);
-                    }}
-                    className="font-mono text-[11px] font-semibold text-ink-soft hover:text-verdigris px-1.5 py-0.5 rounded transition-colors"
+                    key={lang.code}
+                    onClick={() => handleLanguageChange(lang.code as 'en' | 'hi' | 'mr')}
+                    className={cn(
+                      'font-mono text-[11px] font-semibold px-2.5 py-1 rounded-full transition-all duration-200',
+                      isActive
+                        ? 'bg-verdigris text-white shadow-xs'
+                        : 'text-ink-soft hover:text-verdigris'
+                    )}
+                    aria-label={`Switch to ${lang.label}`}
                   >
                     {lang.label}
                   </button>
-                  {i < LANGUAGES.length - 1 && (
-                    <span className="text-sage-light text-[10px]">·</span>
-                  )}
-                </React.Fragment>
-              ))}
+                );
+              })}
             </div>
 
-            {/* Patient Login Portal */}
-            <Link
-              to={ROUTES.login}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-3 py-2 rounded-full hover:bg-bone"
-            >
-              <User size={15} className="text-verdigris" />
-              <span>Portal</span>
-            </Link>
+            {/* Patient Portal / Returning Patient Indicator */}
+            {activePatient ? (
+              <Link
+                to={ROUTES.patientDashboard}
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris bg-mint/50 hover:bg-mint transition-colors px-3 py-1.5 rounded-full border border-verdigris/30 shadow-warm-xs"
+                title={`Returning Patient: ${activePatient.fullName} (${activePatient.uhid})`}
+              >
+                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <User size={13} className="text-verdigris" />
+                <span className="font-mono font-medium">{activePatient.fullName.split(' ')[0]}</span>
+                <span className="text-[10px] text-verdigris-deep font-mono opacity-80">({activePatient.uhid})</span>
+              </Link>
+            ) : (
+              <Link
+                to={ROUTES.login}
+                className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-3 py-2 rounded-full hover:bg-bone"
+              >
+                <User size={15} className="text-verdigris" />
+                <span>{t('nav.login')}</span>
+              </Link>
+            )}
 
             {/* Luxury Primary CTA: Champagne / Saffron Gold Elevation */}
             <Link
               to={ROUTES.book}
-              className="relative group inline-flex items-center gap-2 text-xs font-semibold px-5 py-2.5 rounded-full transition-all duration-300 shadow-warm hover:shadow-saffron hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
+              className="relative group inline-flex items-center gap-2 text-xs font-semibold px-4 sm:px-5 py-2.5 rounded-full transition-all duration-300 shadow-warm hover:shadow-saffron hover:-translate-y-0.5 active:translate-y-0 overflow-hidden"
               style={{
                 background: 'linear-gradient(135deg, #F0A22E 0%, #D4861A 100%)',
                 color: '#10261F',
@@ -252,7 +180,7 @@ export function Header() {
             >
               <span className="relative z-10 flex items-center gap-1.5">
                 <Calendar size={14} className="opacity-80" />
-                <span>Book Appointment</span>
+                <span>{t('nav.bookAppointment')}</span>
               </span>
               <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             </Link>
@@ -281,10 +209,34 @@ export function Header() {
             className="fixed inset-0 bg-paper/98 backdrop-blur-2xl flex flex-col overflow-y-auto z-modal pt-20"
           >
             <div className="section-container flex-1 py-6 space-y-6">
+              {/* Language switcher inside mobile menu */}
+              <div className="flex items-center justify-between pb-4 border-b border-sage-light">
+                <span className="text-xs font-mono text-ink-soft uppercase font-semibold">Select Language</span>
+                <div className="flex items-center bg-bone border border-sage-light rounded-full p-1 text-xs">
+                  {LANGUAGES.map((lang) => {
+                    const isActive = (i18n.language || 'en').startsWith(lang.code);
+                    return (
+                      <button
+                        key={lang.code}
+                        onClick={() => handleLanguageChange(lang.code as 'en' | 'hi' | 'mr')}
+                        className={cn(
+                          'font-mono text-xs font-semibold px-3 py-1 rounded-full transition-all',
+                          isActive
+                            ? 'bg-verdigris text-white shadow-xs'
+                            : 'text-ink-soft hover:text-verdigris'
+                        )}
+                      >
+                        {lang.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <nav aria-label="Mobile navigation" className="divide-y divide-sage-light/60">
                 {NAV_ITEMS.map((item, i) => (
                   <motion.div
-                    key={item.label}
+                    key={item.key}
                     initial={{ opacity: 0, x: -12 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.04 }}
@@ -292,12 +244,12 @@ export function Header() {
                     <Link
                       to={item.href}
                       onClick={() => setIsMobileOpen(false)}
-                      className="flex items-center justify-between py-4 text-ink hover:text-verdigris transition-colors"
+                      className="flex items-center justify-between py-3.5 text-ink hover:text-verdigris transition-colors"
                     >
-                      <span className="font-display text-2xl font-semibold">
-                        {item.label}
+                      <span className="font-display text-xl font-semibold">
+                        {t(`nav.${item.key}`)}
                       </span>
-                      <ArrowRight size={18} className="text-sage" />
+                      <ArrowRight size={16} className="text-sage" />
                     </Link>
                   </motion.div>
                 ))}
@@ -309,15 +261,26 @@ export function Header() {
                   className="btn btn-primary btn-lg w-full justify-center shadow-warm"
                   onClick={() => setIsMobileOpen(false)}
                 >
-                  Book Inpatient / OPD Appointment
+                  {t('nav.bookAppointment')}
                 </Link>
-                <Link
-                  to={ROUTES.login}
-                  className="btn btn-secondary btn-lg w-full justify-center"
-                  onClick={() => setIsMobileOpen(false)}
-                >
-                  Sign In to Patient Portal
-                </Link>
+                {activePatient ? (
+                  <Link
+                    to={ROUTES.patientDashboard}
+                    className="btn btn-secondary btn-lg w-full justify-center flex items-center gap-2"
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    <User size={16} className="text-verdigris" />
+                    <span>Portal: {activePatient.fullName} ({activePatient.uhid})</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to={ROUTES.login}
+                    className="btn btn-secondary btn-lg w-full justify-center"
+                    onClick={() => setIsMobileOpen(false)}
+                  >
+                    {t('nav.login')}
+                  </Link>
+                )}
               </div>
             </div>
           </motion.div>

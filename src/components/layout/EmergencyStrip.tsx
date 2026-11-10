@@ -1,12 +1,16 @@
 // Emergency Strip — Sophisticated Deep Forest Green & Warm Champagne Luxury Aesthetic
 // Replaces stark alert styling with quiet, prestigious international hospital elegance
+// Fully integrated with reactive i18n (English, Hindi, Marathi)
 
 import React from 'react';
 import { APP_CONFIG, ROUTES } from '@/config/constants';
 import { Phone, MapPin, Shield, ArrowUpRight, Clock } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 
 export function EmergencyStrip() {
+  const { t } = useTranslation();
+
   return (
     <div
       role="banner"
@@ -27,7 +31,7 @@ export function EmergencyStrip() {
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
               </span>
               <span className="font-mono text-[11px] font-semibold tracking-widest uppercase text-sage">
-                Trauma & Emergency 24/7
+                {t('emergency.title')}
               </span>
             </div>
 
@@ -41,7 +45,7 @@ export function EmergencyStrip() {
             >
               <Phone size={12} className="text-saffron opacity-90 group-hover:scale-110 transition-transform" />
               <span className="font-mono font-medium tracking-tight text-[#FAF6EE]">{APP_CONFIG.emergencyNumber}</span>
-              <span className="text-[10px] text-sage/70 font-mono tracking-wider ml-0.5">· Immediate Triage</span>
+              <span className="text-[10px] text-sage/70 font-mono tracking-wider ml-0.5">· {t('emergency.call')}</span>
             </a>
 
             <span className="hidden lg:inline text-white/20">|</span>
@@ -52,7 +56,7 @@ export function EmergencyStrip() {
               className="hidden lg:flex items-center gap-1.5 text-xs text-white/80 hover:text-white transition-colors"
             >
               <Clock size={12} className="text-sage" />
-              <span className="text-white/90">Ambulance Dispatch:</span>
+              <span className="text-white/90">{t('emergency.ambulance')}:</span>
               <span className="font-mono text-saffron">{APP_CONFIG.ambulanceNumber}</span>
             </a>
           </div>
@@ -69,7 +73,7 @@ export function EmergencyStrip() {
               className="group inline-flex items-center gap-1 text-[11px] font-medium text-saffron hover:text-saffron-light transition-colors py-0.5"
             >
               <MapPin size={12} className="opacity-80" />
-              <span>Campus Directions</span>
+              <span>{t('emergency.directions')}</span>
               <ArrowUpRight size={11} className="opacity-70 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </Link>
           </div>

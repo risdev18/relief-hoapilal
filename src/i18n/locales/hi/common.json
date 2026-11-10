@@ -8,13 +8,16 @@
   "nav": {
     "departments": "विभाग",
     "doctors": "चिकित्सक",
+    "coe": "उत्कृष्टता केंद्र",
     "treatments": "उपचार",
+    "diagnostics": "निदान व जांच",
     "services": "सेवाएं",
     "healthLibrary": "स्वास्थ्य पुस्तकालय",
     "about": "हमारे बारे में",
     "contact": "संपर्क",
     "bookAppointment": "अपॉइंटमेंट बुक करें",
-    "login": "लॉग इन"
+    "login": "मरीज लॉगिन",
+    "portal": "पोर्टल"
   },
   "hero": {
     "concierge": "केयर कंसीयर्ज",

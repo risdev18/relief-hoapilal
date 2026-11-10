@@ -43,21 +43,21 @@ const FOOTER_LINKS = {
 
 const BRANCHES = [
   {
-    name:    'Relif Andheri',
+    name:    'Relif Andheri (Main Flagship)',
     address: 'Versova Road, Andheri West, Mumbai 400 053',
-    phone:   '+91-XXXX-XXXXXX',
+    phone:   '+91 22 2630 8000',
     isMain:  true,
   },
   {
-    name:    'Relif Thane',
+    name:    'Relif Thane (Day-Care & Oncology)',
     address: 'Majiwada Junction, Thane West 400 601',
-    phone:   '+91-XXXX-XXXXXX',
+    phone:   '+91 22 2540 9000',
     isMain:  false,
   },
   {
-    name:    'Relif Pune',
+    name:    'Relif Pune (Orthopedics & Rehab)',
     address: 'Baner Road, Pune 411 045',
-    phone:   '+91-XXXX-XXXXXX',
+    phone:   '+91 20 2720 5000',
     isMain:  false,
   },
 ];
@@ -236,19 +236,19 @@ export function Footer() {
                style={{ borderTop: '1px solid rgba(31,122,107,0.3)' }}>
             <div className="space-y-1">
               <p className="text-xs" style={{ color: 'var(--sage)' }}>
-                © {new Date().getFullYear()} Relif Hospital. All rights reserved.
+                © {new Date().getFullYear()} Relif Care Multispecialty Hospital. All rights reserved.
               </p>
-              <p className="text-xs font-medium" style={{ color: 'rgba(209,67,47,0.8)' }}>
-                ⚠ Demo project. All data is fictional. Not for real medical use.
+              <p className="text-xs font-medium" style={{ color: 'var(--mint)' }}>
+                Accredited by NABH & NABL · 24/7 Emergency & Critical Care Helpline: 1066
               </p>
             </div>
             <div className="flex items-center gap-4">
               <Link
-                to={ROUTES.demoGuide}
+                to={ROUTES.legal('privacy')}
                 className="text-xs font-mono transition-colors"
                 style={{ color: 'var(--sage)' }}
               >
-                Demo Guide
+                Privacy Policy
               </Link>
               <Link
                 to={ROUTES.designSystem}

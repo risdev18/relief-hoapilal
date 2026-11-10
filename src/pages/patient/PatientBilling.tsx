@@ -88,19 +88,23 @@ function PaymentModal({
   open,
   invoice,
   onClose,
+  onSuccess,
 }: {
-  open:    boolean;
-  invoice: Invoice | null;
-  onClose: () => void;
+  open:      boolean;
+  invoice:   Invoice | null;
+  onClose:   () => void;
+  onSuccess: (id: string) => void;
 }) {
   const [paying, setPaying] = useState(false);
 
   if (!invoice) return null;
 
   async function handlePay() {
+    if (!invoice) return;
     setPaying(true);
-    await new Promise(r => setTimeout(r, 1200));
+    await new Promise(r => setTimeout(r, 1000));
     setPaying(false);
+    onSuccess(invoice.id);
     onClose();
   }
 
@@ -195,6 +199,10 @@ export function PatientBilling() {
     setTimeout(() => setToastMsg(null), 3000);
   }
 
+  function handlePaySuccess(id: string) {
+    showToast(`Payment for invoice ${id} completed successfully.`);
+  }
+
   const totalPaid    = DEMO_INVOICES.filter(i => i.status === 'paid').reduce((s, i) => s + i.amount, 0);
   const totalPending = DEMO_INVOICES.filter(i => i.status === 'pending').reduce((s, i) => s + i.amount, 0);
 
@@ -218,6 +226,7 @@ export function PatientBilling() {
         open={!!payInvoice}
         invoice={payInvoice}
         onClose={() => setPayInvoice(null)}
+        onSuccess={handlePaySuccess}
       />
 
       {/* Header */}

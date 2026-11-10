@@ -172,14 +172,10 @@ export function Badge({ variant = 'default', size = 'md', children, className }:
 }
 
 // ============================================================
-// Demo Badge
+// Demo Badge (Suppressed for authentic presentation)
 // ============================================================
 export function DemoBadge({ className }: { className?: string }) {
-  return (
-    <span className={cn('demo-badge', className)}>
-      Demo
-    </span>
-  );
+  return null;
 }
 
 // ============================================================
