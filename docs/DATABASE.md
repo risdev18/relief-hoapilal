@@ -80,3 +80,4 @@ Firestore Root
   - `entityId`: string
   - `timestamp`: Timestamp
   - `ipAddress`: string
+

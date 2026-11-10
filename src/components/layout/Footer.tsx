@@ -133,26 +133,39 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Emergency number */}
+        {/* Emergency Hotline Banner — Deep Forest & Gold */}
         <div
-          className="rounded-xl p-5 mb-16 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-          style={{ background: 'rgba(209,67,47,0.15)', borderColor: 'rgba(209,67,47,0.3)' }}
+          className="rounded-2xl p-6 mb-16 border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 transition-all duration-300"
+          style={{
+            background: 'linear-gradient(135deg, rgba(11,31,27,0.9) 0%, rgba(19,82,71,0.6) 100%)',
+            borderColor: 'rgba(143,181,163,0.3)',
+            boxShadow: '0 8px 32px rgba(11,31,27,0.4)',
+          }}
         >
-          <div>
-            <p className="font-mono text-xs font-bold tracking-widest uppercase mb-1" style={{ color: 'var(--signal)' }}>
-              Emergency 24/7 [Demo — Not a real number]
-            </p>
-            <p className="font-display text-2xl font-bold" style={{ color: '#E8F4EF' }}>
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <p className="font-mono text-xs font-semibold tracking-widest uppercase text-sage">
+                24/7 Acute Triage & Trauma Service
+              </p>
+            </div>
+            <p className="font-display text-3xl font-bold tracking-tight" style={{ color: '#FAF6EE' }}>
               {APP_CONFIG.emergencyNumber}
             </p>
+            <p className="text-xs text-sage/80 font-mono">
+              Direct line to Emergency On-Call Medical Officer
+            </p>
           </div>
-          <a
-            href={ROUTES.emergency}
-            className="btn btn-sm"
-            style={{ background: 'var(--signal)', color: 'white' }}
+          <Link
+            to={ROUTES.emergency}
+            className="btn btn-md font-semibold flex-shrink-0"
+            style={{
+              background: 'linear-gradient(135deg, #F0A22E 0%, #D4861A 100%)',
+              color: '#10261F',
+            }}
           >
-            Emergency Info
-          </a>
+            Emergency Protocols & Map →
+          </Link>
         </div>
 
         {/* Accessibility & language */}

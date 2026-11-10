@@ -1,8 +1,8 @@
-// Demo Banner — shown in demo mode, links to demo guide
+// Demo Banner — Refined, unobtrusive, modern badge format
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { X } from 'lucide-react';
+import { X, Sparkles } from 'lucide-react';
 import { APP_CONFIG, ROUTES } from '@/config/constants';
 
 export function DemoBanner() {
@@ -12,33 +12,37 @@ export function DemoBanner() {
   
   return (
     <div
-      className="w-full text-center py-2 px-4"
-      style={{ background: 'var(--night)', color: 'rgba(207,230,219,0.9)' }}
+      className="w-full text-center py-1.5 px-4 border-b border-night/40"
+      style={{
+        background: 'linear-gradient(90deg, #0B1F1B 0%, #10261F 50%, #0B1F1B 100%)',
+        color: '#E8F4EF'
+      }}
       role="note"
-      aria-label="Demo mode notice"
+      aria-label="Portfolio demonstration mode notice"
     >
-      <div className="flex items-center justify-center gap-3 max-w-screen-xl mx-auto text-xs">
-        <span className="font-mono font-bold tracking-widest uppercase" style={{ color: 'var(--saffron)' }}>
-          DEMO MODE
+      <div className="flex items-center justify-center gap-2.5 max-w-screen-xl mx-auto text-[11px] font-sans">
+        <span className="inline-flex items-center gap-1 font-mono font-semibold tracking-widest text-[10px] text-saffron uppercase px-2 py-0.5 rounded-full bg-saffron/10 border border-saffron/20">
+          <Sparkles size={10} />
+          Portfolio Project
         </span>
-        <span>·</span>
-        <span>All data is fictional. This is a portfolio project.</span>
+        <span className="text-sage/70 hidden sm:inline">·</span>
+        <span className="text-bone/80 text-[11px] hidden sm:inline">
+          Fictional demonstration. Connected to Supabase real-time cloud data.
+        </span>
         <Link
           to={ROUTES.demoGuide}
-          className="font-medium underline underline-offset-2"
-          style={{ color: 'var(--sage)' }}
+          className="font-medium text-mint hover:text-white underline underline-offset-4 transition-colors ml-1"
         >
-          View Demo Guide
+          Explore Demo Guide →
         </Link>
         <button
           onClick={() => setIsVisible(false)}
-          className="ml-2 opacity-60 hover:opacity-100 transition-opacity"
-          aria-label="Dismiss demo notice"
+          className="ml-3 text-sage hover:text-white transition-opacity p-0.5 rounded"
+          aria-label="Dismiss notice"
         >
-          <X size={12} />
+          <X size={11} />
         </button>
       </div>
     </div>
   );
 }
-

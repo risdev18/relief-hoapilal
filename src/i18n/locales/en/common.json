@@ -1,0 +1,49 @@
+{
+  "emergency": {
+    "title": "Emergency 24/7",
+    "ambulance": "Ambulance",
+    "directions": "Directions",
+    "call": "Call Emergency"
+  },
+  "nav": {
+    "departments": "Departments",
+    "doctors": "Doctors",
+    "treatments": "Treatments",
+    "services": "Services",
+    "healthLibrary": "Health Library",
+    "about": "About",
+    "contact": "Contact",
+    "bookAppointment": "Book Appointment",
+    "login": "Login"
+  },
+  "hero": {
+    "concierge": "The Care Concierge",
+    "headline": "Tell us what's wrong.",
+    "subheadline": "We'll show you where to begin.",
+    "description": "Describe what you're experiencing and we'll guide you to the right department and doctor. No medical jargon. No dead ends.",
+    "disclaimer": "This guide helps you find the right department. It is not medical advice. In an emergency, call emergency.",
+    "liveTitle": "Live at Relif",
+    "erStatus": "Open 24/7",
+    "nextSlot": "Next OPD slot",
+    "queueNow": "Cardiology — Token 14 serving now"
+  },
+  "booking": {
+    "step1": "Which department?",
+    "step2": "Choose a doctor",
+    "step3": "Branch & consultation type",
+    "step4": "Pick a date & slot",
+    "step5": "Your details",
+    "step6": "Review & confirm",
+    "successTitle": "You're booked.",
+    "successSubtitle": "Your appointment has been confirmed (Demo)."
+  },
+  "common": {
+    "demo": "Demo",
+    "book": "Book",
+    "explore": "Explore",
+    "viewAll": "View all",
+    "download": "Download",
+    "cancel": "Cancel",
+    "confirm": "Confirm"
+  }
+}
