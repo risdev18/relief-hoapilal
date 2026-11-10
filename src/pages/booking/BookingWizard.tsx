@@ -8,6 +8,7 @@ import { RelifLine, SuccessRelifLine } from '@/components/ui/RelifLine';
 import { DEPARTMENTS, ROUTES } from '@/config/constants';
 import { cn, formatDate, generateAppointmentId } from '@/utils';
 import { SupabaseService } from '@/services/supabaseService';
+import confetti from 'canvas-confetti';
 
 type ConsultationType = 'in-person' | 'video';
 type BookingStep = 'department' | 'doctor' | 'branch' | 'type' | 'date' | 'slot' | 'details' | 'confirm' | 'success';

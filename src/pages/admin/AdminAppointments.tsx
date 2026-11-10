@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Search, Filter, Download, Calendar, Video, MapPin, Eye, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Search, Filter, Download, Calendar, Video, MapPin, Eye, X, RefreshCw } from 'lucide-react';
 import { Button, Badge, DemoBadge } from '@/components/ui';
+import { SupabaseService, SupabaseAppointmentRecord } from '@/services/supabaseService';
 
 interface AppointmentRecord {
   id: string;
@@ -31,6 +32,51 @@ export function AdminAppointments() {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [selectedAppt, setSelectedAppt] = useState<AppointmentRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Sync with Supabase Cloud & Local Persistence
+  const loadLiveAppointments = async () => {
+    setIsLoading(true);
+    try {
+      const records = await SupabaseService.getAppointments();
+      if (records && records.length > 0) {
+        const mapped: AppointmentRecord[] = records.map((r: SupabaseAppointmentRecord, idx: number) => ({
+          id: r.appointment_id,
+          patientName: r.patient_name || 'Patient',
+          uhid: `RH260${(idx + 100).toString()}`,
+          doctorName: r.doctor_name,
+          department: r.department_name,
+          date: r.appointment_date,
+          time: r.appointment_time,
+          type: r.consultation_type || 'in-person',
+          status: (r.status as any) || 'Confirmed',
+          branch: r.branch_name || 'Andheri',
+        }));
+
+        // Merge with demo ensuring unique ids
+        const map = new Map<string, AppointmentRecord>();
+        mapped.forEach(a => map.set(a.id, a));
+        DEMO_APPOINTMENTS.forEach(a => {
+          if (!map.has(a.id)) map.set(a.id, a);
+        });
+        setAppointments(Array.from(map.values()));
+      }
+    } catch (err) {
+      console.warn('Sync error:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadLiveAppointments();
+
+    const handleCreated = () => {
+      loadLiveAppointments();
+    };
+    window.addEventListener('relif_appointment_created', handleCreated);
+    return () => window.removeEventListener('relif_appointment_created', handleCreated);
+  }, []);
 
   const filtered = appointments.filter(a => {
     const matchesSearch = a.patientName.toLowerCase().includes(search.toLowerCase()) ||
@@ -60,7 +106,15 @@ export function AdminAppointments() {
           </div>
           <p className="text-ink-soft text-sm">Real-time scheduling overview, consultations, and status tracking.</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={loadLiveAppointments}
+            leftIcon={<RefreshCw size={14} className={isLoading ? 'animate-spin text-verdigris' : ''} />}
+          >
+            {isLoading ? 'Syncing...' : 'Sync Supabase'}
+          </Button>
           <Button variant="secondary" size="sm" leftIcon={<Download size={14} />} onClick={() => alert('Demo Export: PDF summary created.')}>
             Export PDF
           </Button>

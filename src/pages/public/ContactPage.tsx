@@ -2,14 +2,40 @@ import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from 'lucide-react';
 import { Button, DemoBadge } from '@/components/ui';
 import { APP_CONFIG } from '@/config/constants';
+import { supabase } from '@/config/supabase';
 
 export function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    email: '',
+    department: 'General Hospital Query',
+    message: '',
+  });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSent(true);
-    setTimeout(() => setSent(false), 4000);
+    setIsSubmitting(true);
+    try {
+      await supabase.from('enquiries').insert([
+        {
+          name: formData.name,
+          phone: formData.phone,
+          email: formData.email,
+          department: formData.department,
+          message: formData.message,
+          created_at: new Date().toISOString(),
+        }
+      ]);
+    } catch {
+      // Offline fallback
+    } finally {
+      setIsSubmitting(false);
+      setSent(true);
+      setTimeout(() => setSent(false), 5000);
+    }
   };
 
   return (
@@ -106,21 +132,45 @@ export function ContactPage() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="block text-xs font-medium text-ink mb-1">Your Name *</label>
-                  <input type="text" required placeholder="Full Name" className="input text-sm" />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Full Name"
+                    value={formData.name}
+                    onChange={e => setFormData({ ...formData, name: e.target.value })}
+                    className="input text-sm"
+                  />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-xs font-medium text-ink mb-1">Phone *</label>
-                    <input type="tel" required placeholder="+91 XXXXX XXXXX" className="input text-sm" />
+                    <input
+                      type="tel"
+                      required
+                      placeholder="+91 XXXXX XXXXX"
+                      value={formData.phone}
+                      onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                      className="input text-sm"
+                    />
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-ink mb-1">Email</label>
-                    <input type="email" placeholder="name@domain.com" className="input text-sm" />
+                    <input
+                      type="email"
+                      placeholder="name@domain.com"
+                      value={formData.email}
+                      onChange={e => setFormData({ ...formData, email: e.target.value })}
+                      className="input text-sm"
+                    />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-ink mb-1">Target Department / Enquiry Nature</label>
-                  <select className="input text-sm">
+                  <select
+                    value={formData.department}
+                    onChange={e => setFormData({ ...formData, department: e.target.value })}
+                    className="input text-sm"
+                  >
                     <option>General Hospital Query</option>
                     <option>Doctor Consultation / Appointment</option>
                     <option>Cashless Insurance & Cost Estimates</option>
@@ -130,10 +180,16 @@ export function ContactPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-ink mb-1">Message</label>
-                  <textarea rows={4} placeholder="How can we assist your visit?" className="input text-sm resize-none" />
+                  <textarea
+                    rows={4}
+                    placeholder="How can we assist your visit?"
+                    value={formData.message}
+                    onChange={e => setFormData({ ...formData, message: e.target.value })}
+                    className="input text-sm resize-none"
+                  />
                 </div>
-                <Button variant="primary" type="submit" className="w-full">
-                  Submit Enquiry (Demo)
+                <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full">
+                  {isSubmitting ? 'Submitting to Supabase...' : 'Submit Enquiry (Demo)'}
                 </Button>
               </form>
             )}

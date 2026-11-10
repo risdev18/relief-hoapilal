@@ -1,6 +1,6 @@
 // PatientDashboard.tsx — Relif Hospital Patient Portal Dashboard
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
@@ -21,6 +21,7 @@ import { Button, Badge, DemoBadge, StatCard, QRCard } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
 import { cn, formatDate } from '@/utils';
 import { ROUTES } from '@/config/constants';
+import { SupabaseService } from '@/services/supabaseService';
 
 // ── Demo data ────────────────────────────────────────────────────────────────
 const DEMO_NEXT_APPOINTMENT = {
@@ -104,7 +105,8 @@ const DEMO_NOTIFICATIONS = [
 ];
 
 // ── QR Modal ─────────────────────────────────────────────────────────────────
-function QRModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function QRModal({ open, onClose, appt }: { open: boolean; onClose: () => void; appt?: any }) {
+  const active = appt || DEMO_NEXT_APPOINTMENT;
   return (
     <AnimatePresence>
       {open && (
@@ -135,13 +137,13 @@ function QRModal({ open, onClose }: { open: boolean; onClose: () => void }) {
               <X size={16} />
             </button>
             <QRCard
-              appointmentId={DEMO_NEXT_APPOINTMENT.id}
+              appointmentId={active.id}
               patientName="Rahul Mehta"
-              date={DEMO_NEXT_APPOINTMENT.date}
-              time={DEMO_NEXT_APPOINTMENT.time}
-              doctor={DEMO_NEXT_APPOINTMENT.doctor}
-              department={DEMO_NEXT_APPOINTMENT.department}
-              qrValue={DEMO_NEXT_APPOINTMENT.id}
+              date={active.date}
+              time={active.time}
+              doctor={active.doctor}
+              department={active.department}
+              qrValue={active.id}
             />
           </motion.div>
         </motion.div>
@@ -153,6 +155,34 @@ function QRModal({ open, onClose }: { open: boolean; onClose: () => void }) {
 // ── Main Component ───────────────────────────────────────────────────────────
 export function PatientDashboard() {
   const [qrOpen, setQrOpen] = useState(false);
+  const [nextAppt, setNextAppt] = useState(DEMO_NEXT_APPOINTMENT);
+
+  const fetchLatest = async () => {
+    try {
+      const records = await SupabaseService.getAppointments();
+      if (records && records.length > 0) {
+        const first = records[0];
+        setNextAppt({
+          id: first.appointment_id,
+          doctor: first.doctor_name,
+          department: first.department_name,
+          date: first.appointment_date,
+          time: first.appointment_time,
+          branch: first.branch_name || 'Andheri West',
+          status: 'confirmed' as const,
+        });
+      }
+    } catch {
+      // Keep default
+    }
+  };
+
+  useEffect(() => {
+    fetchLatest();
+    const handleCreated = () => fetchLatest();
+    window.addEventListener('relif_appointment_created', handleCreated);
+    return () => window.removeEventListener('relif_appointment_created', handleCreated);
+  }, []);
 
   const hour = new Date().getHours();
   const greeting =
@@ -167,7 +197,7 @@ export function PatientDashboard() {
 
   return (
     <>
-      <QRModal open={qrOpen} onClose={() => setQrOpen(false)} />
+      <QRModal open={qrOpen} onClose={() => setQrOpen(false)} appt={nextAppt} />
 
       <div className="max-w-6xl mx-auto space-y-8">
         {/* ── Greeting ── */}
@@ -208,16 +238,16 @@ export function PatientDashboard() {
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div>
                     <p className="font-mono text-xs text-ink-soft mb-1">
-                      {DEMO_NEXT_APPOINTMENT.id}
+                      {nextAppt.id}
                     </p>
                     <h2 className="font-display text-2xl font-semibold text-ink">
-                      {DEMO_NEXT_APPOINTMENT.doctor}
+                      {nextAppt.doctor}
                     </h2>
                     <p className="text-ink-soft mt-1">
-                      {DEMO_NEXT_APPOINTMENT.department} · {DEMO_NEXT_APPOINTMENT.branch}
+                      {nextAppt.department} · {nextAppt.branch}
                     </p>
                     <p className="text-ink font-medium mt-1">
-                      {DEMO_NEXT_APPOINTMENT.date} &nbsp;·&nbsp; {DEMO_NEXT_APPOINTMENT.time}
+                      {nextAppt.date} &nbsp;·&nbsp; {nextAppt.time}
                     </p>
                   </div>
 

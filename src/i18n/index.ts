@@ -33,3 +33,4 @@ export const changeLanguage = (lang: 'en' | 'hi' | 'mr') => {
 };
 
 export default i18n;
+

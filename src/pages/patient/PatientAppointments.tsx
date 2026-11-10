@@ -1,6 +1,6 @@
 // PatientAppointments.tsx — Relif Hospital Patient Appointments
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Calendar,
@@ -14,6 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Badge, DemoBadge, EmptyState, QRCard } from '@/components/ui';
 import { cn, getStatusLabel } from '@/utils';
 import { ROUTES } from '@/config/constants';
+import { SupabaseService, SupabaseAppointmentRecord } from '@/services/supabaseService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type AppointmentStatus = 'confirmed' | 'booked' | 'completed' | 'cancelled' | 'rescheduled';
@@ -243,15 +244,49 @@ function AppointmentRow({
 export function PatientAppointments() {
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [qrAppt, setQrAppt]     = useState<Appointment | null>(null);
+  const [upcomingList, setUpcomingList] = useState<Appointment[]>(UPCOMING);
+
+  const fetchLiveList = async () => {
+    try {
+      const records = await SupabaseService.getAppointments();
+      if (records && records.length > 0) {
+        const live: Appointment[] = records.map((r: SupabaseAppointmentRecord) => ({
+          id: r.appointment_id,
+          doctor: r.doctor_name,
+          department: r.department_name,
+          date: r.appointment_date,
+          time: r.appointment_time,
+          branch: r.branch_name || 'Andheri West',
+          status: 'confirmed',
+        }));
+
+        const map = new Map<string, Appointment>();
+        live.forEach(a => map.set(a.id, a));
+        UPCOMING.forEach(a => {
+          if (!map.has(a.id)) map.set(a.id, a);
+        });
+        setUpcomingList(Array.from(map.values()));
+      }
+    } catch {
+      // Keep static list
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveList();
+    const handleCreated = () => fetchLiveList();
+    window.addEventListener('relif_appointment_created', handleCreated);
+    return () => window.removeEventListener('relif_appointment_created', handleCreated);
+  }, []);
 
   const tabs: { key: 'upcoming' | 'past' | 'cancelled'; label: string; count?: number }[] = [
-    { key: 'upcoming',  label: 'Upcoming',  count: UPCOMING.length },
+    { key: 'upcoming',  label: 'Upcoming',  count: upcomingList.length },
     { key: 'past',      label: 'Past',      count: PAST.length },
     { key: 'cancelled', label: 'Cancelled' },
   ];
 
   const listMap = {
-    upcoming:  UPCOMING,
+    upcoming:  upcomingList,
     past:      PAST,
     cancelled: [] as Appointment[],
   };
