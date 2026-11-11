@@ -227,7 +227,7 @@ export function AskRelifBubble() {
       {/* Clearly Labeled Floating Assistant Trigger */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 px-4 py-3 rounded-full shadow-warm-lg flex items-center gap-2 transition-transform font-semibold text-xs"
+        className="fixed bottom-[72px] right-3 md:bottom-8 md:right-8 w-11 h-11 md:w-auto md:h-auto md:px-4 md:py-3 rounded-full shadow-warm-lg flex items-center justify-center gap-2 transition-transform font-semibold text-xs"
         style={{
           background: isOpen ? 'var(--ink)' : 'var(--verdigris)',
           color: 'white',
@@ -242,12 +242,12 @@ export function AskRelifBubble() {
         {isOpen ? (
           <>
             <X size={16} />
-            <span>Close</span>
+            <span className="hidden md:inline">Close</span>
           </>
         ) : (
           <>
-            <MessageCircle size={16} />
-            <span>Ask Relif</span>
+            <MessageCircle size={18} />
+            <span className="hidden md:inline">Ask Relif</span>
           </>
         )}
       </motion.button>

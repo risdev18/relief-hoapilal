@@ -130,15 +130,16 @@ export function Header() {
   };
 
   return (
-    <header
-      ref={headerRef}
-      className={cn(
-        'sticky top-0 z-header w-full transition-all duration-300',
-        isScrolled
-          ? 'bg-paper/95 backdrop-blur-md border-b border-sage-light shadow-warm-sm py-1.5'
-          : 'bg-paper/90 backdrop-blur-sm border-b border-sage-light/40 py-2.5'
-      )}
-    >
+    <>
+      <header
+        ref={headerRef}
+        className={cn(
+          'sticky top-0 z-header w-full transition-all duration-300',
+          isScrolled
+            ? 'bg-paper/95 backdrop-blur-md border-b border-sage-light shadow-warm-sm py-1.5'
+            : 'bg-paper/90 backdrop-blur-sm border-b border-sage-light/40 py-2.5'
+        )}
+      >
       <div className="section-container">
         <div className="flex items-center justify-between gap-2">
           {/* Brand Identity */}
@@ -314,7 +315,8 @@ export function Header() {
               }}
             >
               <Calendar size={13} className="opacity-90" />
-              <span className="whitespace-nowrap">{t('nav.bookAppointment')}</span>
+              <span className="sm:hidden whitespace-nowrap">{t('common.book')}</span>
+              <span className="hidden sm:inline whitespace-nowrap">{t('nav.bookAppointment')}</span>
               <span className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             </Link>
 
@@ -330,17 +332,44 @@ export function Header() {
           </div>
         </div>
       </div>
+    </header>
 
-      {/* Mobile Drawer */}
+      {/* Mobile Drawer (rendered outside header so backdrop-blur never traps fixed positioning) */}
       <AnimatePresence>
         {isMobileOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -16 }}
+            initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -16 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed inset-0 bg-paper/98 backdrop-blur-2xl flex flex-col overflow-y-auto z-modal pt-20"
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="fixed inset-0 bg-paper flex flex-col overflow-y-auto z-[95]"
           >
+            <div className="sticky top-0 bg-paper border-b border-sage-light/80 px-4 py-3 flex items-center justify-between">
+              <RelifWordmark />
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setHighContrast(v => !v)}
+                  aria-pressed={highContrast}
+                  className={cn(
+                    'font-mono text-[10px] font-bold px-2 py-1 rounded-full border',
+                    highContrast
+                      ? 'bg-ink text-paper border-ink'
+                      : 'bg-bone text-ink-soft border-sage-light'
+                  )}
+                >
+                  Aa+
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileOpen(false)}
+                  aria-label="Close navigation menu"
+                  className="p-2 rounded-xl bg-bone text-ink hover:bg-sage-light/40"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+            </div>
             <div className="section-container flex-1 py-6 space-y-6">
               {/* Language switcher inside mobile menu */}
               <div className="flex items-center justify-between pb-4 border-b border-sage-light">
@@ -440,6 +469,6 @@ export function Header() {
           </motion.div>
         )}
       </AnimatePresence>
-    </header>
+    </>
   );
 }

@@ -18,7 +18,7 @@ export function PublicLayout() {
       <Header />
       
       {/* Page content */}
-      <main id="main-content" className="flex-1" tabIndex={-1}>
+      <main id="main-content" className="flex-1 pb-16 md:pb-0" tabIndex={-1}>
         <Suspense
           fallback={
             <div className="min-h-[60vh] flex items-center justify-center bg-paper">

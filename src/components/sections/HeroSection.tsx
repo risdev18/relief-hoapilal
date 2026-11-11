@@ -12,10 +12,10 @@ import { SupabaseService } from '@/services/supabaseService';
 import type { MasterDepartment, MasterDoctor } from '@/data/masterCatalog';
 
 const CONCIERGE_PLACEHOLDERS = [
-  'Child has persistent fever since yesterday…',
-  'Tightness or pain in chest on exertion…',
-  'Lower back pain when lifting or sitting…',
-  'Routine health checkup or skin rash…',
+  'Persistent fever since yesterday…',
+  'Chest tightness on exertion…',
+  'Lower back pain when sitting…',
+  'Skin rash or routine checkup…',
 ];
 
 const QUICK_CHIPS = [
@@ -100,23 +100,23 @@ export function HeroSection() {
       <div className="absolute top-1/4 -right-40 w-96 h-96 rounded-full bg-mint/40 blur-3xl pointer-events-none" />
       <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-bone blur-2xl pointer-events-none" />
 
-      <div className="section-container relative w-full pt-10 pb-20 lg:py-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-14 items-center">
+      <div className="section-container relative w-full pt-6 pb-20 lg:py-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           {/* Left Column */}
-          <div className="lg:col-span-7 space-y-7">
+          <div className="lg:col-span-7 space-y-5 sm:space-y-7">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-              className="inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-bone border border-sage-light/70 shadow-warm-sm"
+              className="inline-flex flex-wrap items-center gap-x-2 gap-y-0.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full bg-bone border border-sage-light/70 shadow-warm-sm"
             >
-              <span className="w-2 h-2 rounded-full bg-verdigris animate-pulse" />
-              <span className="font-mono text-[11px] font-semibold tracking-widest text-verdigris-deep uppercase">
+              <span className="w-2 h-2 rounded-full bg-verdigris animate-pulse flex-shrink-0" />
+              <span className="font-mono text-[10px] sm:text-[11px] font-semibold tracking-wider sm:tracking-widest text-verdigris-deep uppercase">
                 {t('hero.concierge')}
               </span>
               <span className="text-sage text-xs">·</span>
-              <span className="text-ink-soft text-xs font-medium">
-                NABH &amp; NABL Accredited Care
+              <span className="text-ink-soft text-[11px] sm:text-xs font-medium">
+                NABH &amp; NABL Accredited
               </span>
             </motion.div>
 
@@ -158,7 +158,7 @@ export function HeroSection() {
                       type="search"
                       value={query}
                       onChange={e => setQuery(e.target.value)}
-                      className="w-full bg-transparent border-0 p-0 text-ink placeholder:text-ink-muted text-base leading-relaxed focus:outline-none focus:ring-0"
+                      className="w-full bg-transparent border-0 p-0 text-ink placeholder:text-ink-muted text-sm sm:text-base leading-relaxed focus:outline-none focus:ring-0"
                       placeholder={CONCIERGE_PLACEHOLDERS[placeholderIndex]}
                     />
                   </div>

@@ -457,7 +457,7 @@ export function BookingWizard() {
   return (
     <div className="min-h-screen bg-bone pb-20">
       {/* Top Bar with Navigation & Save Progress */}
-      <header className="bg-paper border-b border-sage-light sticky top-0 z-sticky">
+      <header className="bg-paper border-b border-sage-light sticky top-0 z-header">
         <div className="section-container py-3 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <Link to={ROUTES.home} className="font-display font-bold text-xl text-ink hover:text-verdigris">
@@ -477,10 +477,10 @@ export function BookingWizard() {
             <button
               type="button"
               onClick={handleSaveDraft}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft hover:text-verdigris px-3 py-1.5 rounded-full border border-sage-light bg-bone transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft hover:text-verdigris px-3 py-1.5 rounded-full border border-sage-light bg-bone transition-colors"
             >
               <BookmarkCheck size={14} />
-              <span className="hidden sm:inline">Save Progress</span>
+              <span>Save Progress</span>
             </button>
             <Link
               to={ROUTES.home}
@@ -689,7 +689,7 @@ export function BookingWizard() {
                                 setSelectedSlot('');
                               }}
                               className={cn(
-                                'w-full p-4 rounded-2xl border-2 text-left flex flex-col sm:flex-row gap-4 items-start sm:items-center transition-all',
+                                'w-full p-3.5 sm:p-4 rounded-2xl border-2 text-left flex items-start sm:items-center gap-3.5 sm:gap-4 transition-all',
                                 active
                                   ? 'border-verdigris bg-mint/30 shadow-warm-xs'
                                   : 'border-sage-light bg-paper hover:border-sage'
@@ -698,7 +698,7 @@ export function BookingWizard() {
                               <DoctorAvatar
                                 name={doc.name}
                                 photoUrl={doc.photoUrl}
-                                className="w-20 flex-shrink-0"
+                                className="w-16 sm:w-20 flex-shrink-0"
                               />
                               <div className="flex-1 min-w-0">
                                 <div className="flex flex-wrap items-center gap-2 mb-1">
