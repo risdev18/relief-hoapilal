@@ -1,22 +1,27 @@
 // Main App Router
-import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { Suspense, lazy, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { PublicLayout } from '@/layouts/PublicLayout';
 import { RelifSpinner } from '@/components/ui';
 
-// ── Lazy-loaded public pages ──────────────────────────────────────────────
-const LandingPage          = lazy(() => import('@/pages/public/LandingPage').then(m => ({ default: m.LandingPage })));
-const DepartmentsPage      = lazy(() => import('@/pages/public/DepartmentsPage').then(m => ({ default: m.DepartmentsPage })));
-const DepartmentDetailPage = lazy(() => import('@/pages/public/DepartmentDetailPage').then(m => ({ default: m.DepartmentDetailPage })));
-const DoctorsPage          = lazy(() => import('@/pages/public/DoctorsPage').then(m => ({ default: m.DoctorsPage })));
-const DoctorProfilePage    = lazy(() => import('@/pages/public/DoctorProfilePage').then(m => ({ default: m.DoctorProfilePage })));
-const AboutPage            = lazy(() => import('@/pages/public/AboutPage').then(m => ({ default: m.AboutPage })));
-const ContactPage          = lazy(() => import('@/pages/public/ContactPage').then(m => ({ default: m.ContactPage })));
-const EmergencyPage        = lazy(() => import('@/pages/public/EmergencyPage').then(m => ({ default: m.EmergencyPage })));
+// ── Eagerly loaded primary navigation pages (instant top-nav switching) ───
+import { LandingPage } from '@/pages/public/LandingPage';
+import { DepartmentsPage } from '@/pages/public/DepartmentsPage';
+import { DepartmentDetailPage } from '@/pages/public/DepartmentDetailPage';
+import { DoctorsPage } from '@/pages/public/DoctorsPage';
+import { DoctorProfilePage } from '@/pages/public/DoctorProfilePage';
+import { CoEPage } from '@/pages/public/CoEPage';
+import { TreatmentsPage } from '@/pages/public/TreatmentsPage';
+import { DiagnosticsPage } from '@/pages/public/DiagnosticsPage';
+import { HealthLibraryPage } from '@/pages/public/HealthLibraryPage';
+import { AboutPage } from '@/pages/public/AboutPage';
+import { ContactPage } from '@/pages/public/ContactPage';
+import { EmergencyPage } from '@/pages/public/EmergencyPage';
+import { BranchesPage } from '@/pages/public/BranchesPage';
+
+// ── Lazy-loaded secondary public pages ────────────────────────────────────
 const InsurancePage        = lazy(() => import('@/pages/public/InsurancePage').then(m => ({ default: m.InsurancePage })));
 const FacilitiesPage       = lazy(() => import('@/pages/public/FacilitiesPage').then(m => ({ default: m.FacilitiesPage })));
-const HealthLibraryPage    = lazy(() => import('@/pages/public/HealthLibraryPage').then(m => ({ default: m.HealthLibraryPage })));
-const TreatmentsPage       = lazy(() => import('@/pages/public/TreatmentsPage').then(m => ({ default: m.TreatmentsPage })));
 const CareersPage          = lazy(() => import('@/pages/public/CareersPage').then(m => ({ default: m.CareersPage })));
 const FAQsPage             = lazy(() => import('@/pages/public/FAQsPage').then(m => ({ default: m.FAQsPage })));
 const LegalPage            = lazy(() => import('@/pages/public/LegalPage').then(m => ({ default: m.LegalPage })));
@@ -24,9 +29,6 @@ const GalleryPage          = lazy(() => import('@/pages/public/GalleryPage').the
 const PharmacyPage         = lazy(() => import('@/pages/public/PharmacyPage').then(m => ({ default: m.PharmacyPage })));
 const InternationalPage    = lazy(() => import('@/pages/public/InternationalPage').then(m => ({ default: m.InternationalPage })));
 const VisitorInfoPage      = lazy(() => import('@/pages/public/VisitorInfoPage').then(m => ({ default: m.VisitorInfoPage })));
-const DiagnosticsPage      = lazy(() => import('@/pages/public/DiagnosticsPage').then(m => ({ default: m.DiagnosticsPage })));
-const BranchesPage         = lazy(() => import('@/pages/public/BranchesPage').then(m => ({ default: m.BranchesPage })));
-const CoEPage              = lazy(() => import('@/pages/public/CoEPage').then(m => ({ default: m.CoEPage })));
 const DesignSystemPage     = lazy(() => import('@/pages/public/DesignSystemPage').then(m => ({ default: m.DesignSystemPage })));
 
 // ── Booking ───────────────────────────────────────────────────────────────
@@ -99,9 +101,18 @@ function NotFoundPage() {
   );
 }
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [pathname]);
+  return null;
+}
+
 export function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <Suspense fallback={<PageLoader />}>
         <Routes>
           {/* ── Public pages ── */}

@@ -276,9 +276,20 @@ function mapAppointmentRow(row: any): SupabaseAppointmentRecord {
   };
 }
 
+const CATALOG_TTL_MS = 60_000;
+const catalogCache: {
+  branches?: { at: number; data: MasterBranch[] };
+  departments?: { at: number; data: MasterDepartment[] };
+  doctors?: { at: number; data: MasterDoctor[] };
+} = {};
+
 export class SupabaseService {
   // ── Master Hospital Catalog (Supabase primary -> Master baseline fallback) ─
   static async getBranches(): Promise<MasterBranch[]> {
+    const cached = catalogCache.branches;
+    if (cached && Date.now() - cached.at < CATALOG_TTL_MS) {
+      return cached.data;
+    }
     try {
       const { data, error } = await supabase
         .from('branches')
@@ -287,7 +298,7 @@ export class SupabaseService {
         .order('is_main', { ascending: false });
 
       if (!error && data && data.length > 0) {
-        return data.map((b: any) => ({
+        const mapped = data.map((b: any) => ({
           id: b.id,
           slug: b.slug,
           name: b.name,
@@ -302,6 +313,8 @@ export class SupabaseService {
           lng: Number(b.lng),
           isMain: Boolean(b.is_main),
         }));
+        catalogCache.branches = { at: Date.now(), data: mapped };
+        return mapped;
       }
     } catch {
       // Schema not yet executed in Supabase
@@ -310,6 +323,10 @@ export class SupabaseService {
   }
 
   static async getDepartments(): Promise<MasterDepartment[]> {
+    const cached = catalogCache.departments;
+    if (cached && Date.now() - cached.at < CATALOG_TTL_MS) {
+      return cached.data;
+    }
     try {
       const { data, error } = await supabase
         .from('departments')
@@ -318,7 +335,7 @@ export class SupabaseService {
         .order('sort_order', { ascending: true });
 
       if (!error && data && data.length > 0) {
-        return data.map((d: any) => ({
+        const mapped = data.map((d: any) => ({
           id: d.id,
           slug: d.slug,
           name: d.name,
@@ -329,6 +346,8 @@ export class SupabaseService {
           symptomKeywords: Array.isArray(d.symptom_keywords) ? d.symptom_keywords : [],
           sortOrder: Number(d.sort_order || 1),
         }));
+        catalogCache.departments = { at: Date.now(), data: mapped };
+        return mapped;
       }
     } catch {
       // Schema not yet executed in Supabase
@@ -337,6 +356,9 @@ export class SupabaseService {
   }
 
   static async getDoctors(includeInactive = false): Promise<MasterDoctor[]> {
+    if (!includeInactive && catalogCache.doctors && Date.now() - catalogCache.doctors.at < CATALOG_TTL_MS) {
+      return catalogCache.doctors.data;
+    }
     try {
       let query = supabase
         .from('doctors')
@@ -351,7 +373,11 @@ export class SupabaseService {
       if (!error && data && data.length > 0) {
         const deptMap = new Map(MASTER_DEPARTMENTS.map(d => [d.id, d]));
         const branchMap = new Map(MASTER_BRANCHES.map(b => [b.id, b]));
-        return data.map((row: any) => mapDoctorRow(row, deptMap, branchMap));
+        const mapped = data.map((row: any) => mapDoctorRow(row, deptMap, branchMap));
+        if (!includeInactive) {
+          catalogCache.doctors = { at: Date.now(), data: mapped };
+        }
+        return mapped;
       }
     } catch {
       // Schema not yet executed in Supabase

@@ -4,7 +4,6 @@ import {
   ClipboardCheck, Download, X, AlertTriangle, CheckCircle2,
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { jsPDF } from 'jspdf';
 import { Badge } from '@/components/ui';
 
 interface PrepChecklist {
@@ -209,7 +208,8 @@ const TREATMENTS_DATA: TreatmentItem[] = [
   },
 ];
 
-function downloadChecklistPDF(item: TreatmentItem) {
+async function downloadChecklistPDF(item: TreatmentItem) {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF();
   let y = 18;
   doc.setFont('helvetica', 'bold');

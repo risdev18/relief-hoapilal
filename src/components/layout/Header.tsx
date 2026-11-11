@@ -105,7 +105,7 @@ export function Header() {
     };
     window.addEventListener('relif_auth_state_changed', handleAuthChange);
     return () => window.removeEventListener('relif_auth_state_changed', handleAuthChange);
-  }, [location]);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {

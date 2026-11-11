@@ -1,11 +1,12 @@
 // Public layout — Header + Footer + Emergency Strip + Mobile bar + Assistant
 
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
 import { EmergencyStrip } from '@/components/layout/EmergencyStrip';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileBottomBar, AskRelifBubble } from '@/components/layout/MobileBar';
+import { RelifSpinner } from '@/components/ui';
 
 export function PublicLayout() {
   return (
@@ -18,7 +19,15 @@ export function PublicLayout() {
       
       {/* Page content */}
       <main id="main-content" className="flex-1" tabIndex={-1}>
-        <Outlet />
+        <Suspense
+          fallback={
+            <div className="min-h-[60vh] flex items-center justify-center bg-paper">
+              <RelifSpinner size="lg" className="text-verdigris" />
+            </div>
+          }
+        >
+          <Outlet />
+        </Suspense>
       </main>
       
       {/* Footer */}
