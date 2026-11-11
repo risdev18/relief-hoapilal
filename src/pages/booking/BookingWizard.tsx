@@ -689,41 +689,53 @@ export function BookingWizard() {
                                 setSelectedSlot('');
                               }}
                               className={cn(
-                                'w-full p-3.5 sm:p-4 rounded-2xl border-2 text-left flex items-start sm:items-center gap-3.5 sm:gap-4 transition-all',
+                                'w-full p-4 rounded-2xl border-2 text-left flex flex-col sm:flex-row gap-3.5 sm:gap-4 items-stretch sm:items-center transition-all',
                                 active
                                   ? 'border-verdigris bg-mint/30 shadow-warm-xs'
                                   : 'border-sage-light bg-paper hover:border-sage'
                               )}
                             >
-                              <DoctorAvatar
-                                name={doc.name}
-                                photoUrl={doc.photoUrl}
-                                className="w-16 sm:w-20 flex-shrink-0"
-                              />
-                              <div className="flex-1 min-w-0">
-                                <div className="flex flex-wrap items-center gap-2 mb-1">
-                                  <h3 className="font-display font-bold text-lg text-ink">{doc.name}</h3>
-                                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-ink bg-bone px-2 py-0.5 rounded-full border border-sage-light">
-                                    <Star size={11} className="fill-saffron text-saffron" />
-                                    {doc.rating} ({doc.reviewCount})
-                                  </span>
-                                </div>
-                                <p className="text-xs font-medium text-verdigris mb-1">{doc.designation}</p>
-                                <p className="text-xs text-ink-soft">
-                                  {doc.experienceYears} yrs exp · {doc.qualifications.join(', ')} · {doc.branchName}
-                                </p>
-                                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-ink-soft">
-                                  <span>Languages: {doc.languages.join(', ')}</span>
-                                  <span className="inline-flex items-center gap-1">
-                                    <AvailabilityDot status={doc.availability} />
-                                    {doc.nextSlotLabel}
-                                  </span>
+                              <div className="flex items-start gap-3.5 sm:contents">
+                                <DoctorAvatar
+                                  name={doc.name}
+                                  photoUrl={doc.photoUrl}
+                                  className="w-16 sm:w-20 flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-1">
+                                    <h3 className="font-display font-bold text-base sm:text-lg text-ink leading-snug">{doc.name}</h3>
+                                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink bg-bone px-2 py-0.5 rounded-full border border-sage-light">
+                                      <Star size={11} className="fill-saffron text-saffron" />
+                                      {doc.rating} ({doc.reviewCount})
+                                    </span>
+                                  </div>
+                                  <p className="text-xs font-medium text-verdigris mb-1">{doc.designation}</p>
+                                  <p className="text-xs text-ink-soft leading-relaxed">
+                                    {doc.experienceYears} yrs exp · {doc.qualifications.join(', ')} · {doc.branchName}
+                                  </p>
+                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1.5 text-xs text-ink-soft">
+                                    <span>Languages: {doc.languages.join(', ')}</span>
+                                    <span className="hidden sm:inline-flex items-center gap-1">
+                                      <AvailabilityDot status={doc.availability} />
+                                      {doc.nextSlotLabel}
+                                    </span>
+                                  </div>
                                 </div>
                               </div>
-                              <div className="sm:text-right flex-shrink-0">
-                                <p className="font-mono text-xs text-ink-soft">Consultation Fee</p>
-                                <p className="font-display text-2xl font-bold text-ink">₹{doc.feeInClinic}</p>
-                                <p className="font-mono text-[11px] text-verdigris">Video ₹{doc.feeVideo}</p>
+                              <div className="pt-2.5 border-t border-sage-light/70 sm:pt-0 sm:border-t-0 flex items-center justify-between sm:block sm:text-right flex-shrink-0">
+                                <span className="sm:hidden inline-flex items-center gap-1.5 text-xs text-ink-soft">
+                                  <AvailabilityDot status={doc.availability} />
+                                  {doc.nextSlotLabel}
+                                </span>
+                                <div className="text-right">
+                                  <p className="font-mono text-[11px] sm:text-xs text-ink-soft">Consultation Fee</p>
+                                  <p className="font-display text-xl sm:text-2xl font-bold text-ink leading-tight">
+                                    ₹{doc.feeInClinic}
+                                    <span className="sm:block font-mono text-[11px] font-normal text-verdigris ml-1.5 sm:ml-0">
+                                      Video ₹{doc.feeVideo}
+                                    </span>
+                                  </p>
+                                </div>
                               </div>
                             </button>
                           );
