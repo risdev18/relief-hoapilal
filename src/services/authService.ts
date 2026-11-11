@@ -100,7 +100,7 @@ async function fetchOrCreateProfile(authUser: any): Promise<PatientUser> {
     emergencyContact: profileRow?.emergency_contact || meta.emergency_contact || '',
     address: profileRow?.address || '',
     city: profileRow?.city || 'Mumbai',
-    role: (profileRow?.role || meta.role || 'patient') as UserRole,
+    role: (profileRow?.role || 'patient') as UserRole,
     isLoggedIn: true,
     lastLoginAt: new Date().toISOString(),
   };
