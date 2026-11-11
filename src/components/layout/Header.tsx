@@ -3,9 +3,13 @@
 // Multilingual reactive switching (EN, HI, MR) + Returning Patient recognition + Supabase Auth controls
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Link, NavLink, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X, User, Calendar, ArrowRight, LogOut, LogIn } from 'lucide-react';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import {
+  Menu, X, User, Calendar, ArrowRight, LogOut, LogIn,
+  ChevronDown, FileText, ShieldCheck, ClipboardList
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { changeLanguage } from '@/i18n';
 import { cn } from '@/utils';
@@ -68,10 +72,14 @@ export function Header() {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [activePatient, setActivePatient] = useState<PatientUser | null>(null);
   const location = useLocation();
+  const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     setActivePatient(AuthService.getActivePatient());
+    void AuthService.syncSession().then(u => {
+      if (u) setActivePatient(u);
+    });
     const handleAuthChange = () => {
       setActivePatient(AuthService.getActivePatient());
     };
@@ -95,9 +103,10 @@ export function Header() {
     changeLanguage(code);
   };
 
-  const handleSignOut = () => {
-    AuthService.logoutPatient();
+  const handleSignOut = async () => {
+    await AuthService.logoutPatient();
     setActivePatient(null);
+    navigate(ROUTES.home);
   };
 
   return (
@@ -157,42 +166,103 @@ export function Header() {
               })}
             </div>
 
-            {/* Patient Portal / Login & Registration Options */}
+            {/* Unified Account Dropdown (My Appointments, Reports, Profile, Logout) */}
             {activePatient ? (
-              <div className="hidden sm:flex items-center gap-1">
-                <Link
-                  to={ROUTES.patientDashboard}
-                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris bg-mint/50 hover:bg-mint transition-colors px-2.5 py-1 rounded-full border border-verdigris/30 shadow-warm-xs"
-                  title={`Logged in as ${activePatient.fullName} (${activePatient.uhid})`}
-                >
-                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <User size={12} className="text-verdigris" />
-                  <span className="font-mono font-medium">{activePatient.fullName.split(' ')[0]}</span>
-                </Link>
-                <button
-                  type="button"
-                  onClick={handleSignOut}
-                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-ink-soft hover:text-signal transition-colors px-2 py-1 rounded-full hover:bg-bone"
-                  title="Sign out / Switch account"
-                >
-                  <LogOut size={12} />
-                  <span>Exit</span>
-                </button>
+              <div className="hidden sm:flex items-center">
+                <DropdownMenu.Root>
+                  <DropdownMenu.Trigger asChild>
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-verdigris-deep bg-mint/60 hover:bg-mint transition-colors px-3 py-1.5 rounded-full border border-verdigris/30 shadow-warm-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-verdigris"
+                      aria-label="Account menu"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
+                      <User size={13} className="text-verdigris" />
+                      <span className="max-w-[110px] truncate">{activePatient.fullName.split(' ')[0]}</span>
+                      <ChevronDown size={13} className="text-verdigris-deep/80" />
+                    </button>
+                  </DropdownMenu.Trigger>
+
+                  <DropdownMenu.Portal>
+                    <DropdownMenu.Content
+                      align="end"
+                      sideOffset={8}
+                      className="z-dropdown min-w-[220px] rounded-2xl bg-paper border border-sage-light shadow-warm-xl p-1.5 text-sm text-ink animate-in fade-in-0 zoom-in-95"
+                    >
+                      <div className="px-3 py-2 border-b border-sage-light/70 mb-1">
+                        <p className="font-semibold text-xs text-ink truncate">{activePatient.fullName}</p>
+                        <p className="font-mono text-[10px] text-ink-soft mt-0.5">UHID: {activePatient.uhid}</p>
+                      </div>
+
+                      <DropdownMenu.Item asChild>
+                        <Link
+                          to={ROUTES.patientAppointments}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-ink hover:bg-mint/50 hover:text-verdigris-deep focus:bg-mint/50 focus:outline-none cursor-pointer"
+                        >
+                          <ClipboardList size={14} className="text-verdigris" />
+                          <span>{t('nav.myAppointments')}</span>
+                        </Link>
+                      </DropdownMenu.Item>
+
+                      <DropdownMenu.Item asChild>
+                        <Link
+                          to={ROUTES.patientRecords}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-ink hover:bg-mint/50 hover:text-verdigris-deep focus:bg-mint/50 focus:outline-none cursor-pointer"
+                        >
+                          <FileText size={14} className="text-verdigris" />
+                          <span>{t('nav.reports')}</span>
+                        </Link>
+                      </DropdownMenu.Item>
+
+                      <DropdownMenu.Item asChild>
+                        <Link
+                          to={ROUTES.patientProfile}
+                          className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-ink hover:bg-mint/50 hover:text-verdigris-deep focus:bg-mint/50 focus:outline-none cursor-pointer"
+                        >
+                          <User size={14} className="text-verdigris" />
+                          <span>{t('nav.profile')}</span>
+                        </Link>
+                      </DropdownMenu.Item>
+
+                      {activePatient.role === 'admin' && (
+                        <DropdownMenu.Item asChild>
+                          <Link
+                            to={ROUTES.adminDashboard}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-verdigris-deep hover:bg-mint/50 focus:bg-mint/50 focus:outline-none cursor-pointer"
+                          >
+                            <ShieldCheck size={14} className="text-saffron-deep" />
+                            <span>{t('nav.adminConsole')}</span>
+                          </Link>
+                        </DropdownMenu.Item>
+                      )}
+
+                      <DropdownMenu.Separator className="h-px bg-sage-light/70 my-1" />
+
+                      <DropdownMenu.Item
+                        onSelect={handleSignOut}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-signal hover:bg-[var(--signal-light)] focus:bg-[var(--signal-light)] focus:outline-none cursor-pointer"
+                      >
+                        <LogOut size={14} />
+                        <span>{t('nav.logout')}</span>
+                      </DropdownMenu.Item>
+                    </DropdownMenu.Content>
+                  </DropdownMenu.Portal>
+                </DropdownMenu.Root>
               </div>
             ) : (
               <div className="hidden sm:flex items-center gap-1">
                 <Link
                   to={ROUTES.login}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-2.5 py-1 rounded-full hover:bg-bone border border-sage-light/70 shadow-warm-xs"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-2.5 py-1.5 rounded-full hover:bg-bone border border-sage-light/70 shadow-warm-xs"
                 >
                   <LogIn size={13} className="text-verdigris" />
-                  <span>Sign In</span>
+                  <span>{t('nav.login')}</span>
                 </Link>
                 <Link
                   to={ROUTES.register}
-                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2 py-1 rounded-full border border-verdigris/25 transition-colors"
+                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2.5 py-1.5 rounded-full border border-verdigris/25 transition-colors"
                 >
-                  Register
+                  {t('nav.register')}
                 </Link>
               </div>
             )}

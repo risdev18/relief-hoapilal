@@ -264,17 +264,6 @@
     border-color: var(--signal-light);
   }
 
-  /* Demo banner */
-  .demo-badge {
-    @apply text-xs font-mono font-medium px-2 py-0.5;
-    background: var(--saffron-light);
-    color: var(--saffron-deep);
-    border: 1px solid var(--clay);
-    border-radius: var(--radius-sm);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
   /* Availability dots */
   .dot-available {
     @apply inline-block w-2 h-2 rounded-full;

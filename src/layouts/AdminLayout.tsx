@@ -1,14 +1,12 @@
-// Admin Dashboard Layout — Collapsible sidebar, dark mode optional
-import React, { useState } from 'react';
-import { Outlet, NavLink, Link, useLocation } from 'react-router-dom';
+// Admin Dashboard Layout — Role-guarded (role === 'admin'), collapsible sidebar
+import React, { useEffect, useState } from 'react';
+import { Outlet, NavLink, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Users, Stethoscope, Building2, Calendar,
-  BarChart2, Settings, FileText, LogOut, Menu, X, Bell,
-  ChevronDown, Package, FlaskConical, Heart, Briefcase,
-  MessageSquare, Image, Globe
+  BarChart2, Settings, LogOut, Menu, X, Globe, ShieldAlert, ArrowLeft
 } from 'lucide-react';
-import { DemoBanner } from '@/components/layout/DemoBanner';
+import { AuthService, type PatientUser } from '@/services/authService';
 import { cn } from '@/utils';
 
 const NAV_GROUPS = [
@@ -43,14 +41,84 @@ const NAV_GROUPS = [
 ];
 
 export function AdminLayout() {
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [isDark, setIsDark] = useState(false);
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const [user, setUser] = useState<PatientUser | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    AuthService.syncSession().then((sessionUser) => {
+      if (!mounted) return;
+      if (!sessionUser) {
+        navigate('/auth/login?redirect=/admin/dashboard', { replace: true });
+        return;
+      }
+      setUser(sessionUser);
+      setCheckingAuth(false);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    await AuthService.logoutPatient();
+    navigate('/auth/login', { replace: true });
+  };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-bone flex items-center justify-center p-6">
+        <div className="bg-paper rounded-2xl border border-sage-light p-8 shadow-warm text-center max-w-sm w-full">
+          <div className="w-8 h-8 rounded-full border-2 border-verdigris border-t-transparent animate-spin mx-auto mb-3" />
+          <p className="text-sm text-ink-soft">Verifying administrator credentials…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user || user.role !== 'admin') {
+    return (
+      <div className="min-h-screen bg-bone flex items-center justify-center p-6">
+        <div className="bg-paper rounded-2xl border border-sage-light p-8 shadow-warm-lg max-w-lg w-full text-center space-y-4">
+          <div className="w-12 h-12 rounded-full bg-[var(--signal-light)] text-[var(--signal-deep)] flex items-center justify-center mx-auto">
+            <ShieldAlert size={24} />
+          </div>
+          <h1 className="font-display text-2xl font-semibold text-ink">Administrator Access Required</h1>
+          <p className="text-sm text-ink-soft leading-relaxed">
+            Signed in as <span className="font-medium text-ink">{user?.email || 'guest'}</span> (role:{' '}
+            <span className="font-mono text-xs px-1.5 py-0.5 rounded bg-bone">{user?.role || 'patient'}</span>).
+            Only hospital staff with <span className="font-mono text-xs">admin</span> privileges may manage doctors, fees, slots, and patient schedules.
+          </p>
+          <div className="bg-bone rounded-xl p-3 text-left text-xs font-mono text-ink-soft border border-sage-light overflow-x-auto">
+            UPDATE public.profiles SET role = 'admin' WHERE email = '{user?.email}';
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+            <Link
+              to="/patient/dashboard"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-pill bg-verdigris text-white text-sm font-medium hover:bg-verdigris-deep transition-colors"
+            >
+              <ArrowLeft size={14} /> Go to Patient Portal
+            </Link>
+            <button
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-pill border border-sage-light text-sm text-ink-soft hover:text-ink transition-colors"
+            >
+              <LogOut size={14} /> Sign out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className={cn('min-h-screen flex flex-col', isDark ? 'dark' : '')}
-         style={{ background: isDark ? 'var(--night)' : 'var(--bone)' }}>
-      <DemoBanner />
-
+    <div
+      className={cn('min-h-screen flex flex-col', isDark ? 'dark' : '')}
+      style={{ background: isDark ? 'var(--night)' : 'var(--bone)' }}
+    >
       {/* Top bar */}
       <header
         className="sticky top-0 z-header border-b flex items-center justify-between px-4 h-14"
@@ -73,30 +141,41 @@ export function AdminLayout() {
           </Link>
         </div>
         <div className="flex items-center gap-2">
+          <span className="hidden sm:inline-block font-mono text-xs px-2.5 py-1 rounded-pill bg-mint text-verdigris-deep">
+            {user.name} · Admin
+          </span>
           <button
             onClick={() => setIsDark(d => !d)}
             className="text-xs font-mono px-3 py-1.5 rounded-pill border transition-colors"
             style={{ borderColor: 'var(--sage-light)', color: 'var(--ink-soft)' }}
           >
-            {isDark ? '☀ Light' : '☽ Dark'}
+            {isDark ? '☀ Light' : '☾ Night'}
           </button>
-          <button className="relative p-2 rounded-lg transition-colors" style={{ color: 'var(--ink-soft)' }} aria-label="Notifications">
-            <Bell size={18} />
-            <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-signal" />
-          </button>
-          <button className="p-2 rounded-lg transition-colors" style={{ color: 'var(--ink-soft)' }} aria-label="Logout">
-            <LogOut size={18} />
+          <Link
+            to="/"
+            className="text-xs font-medium px-3 py-1.5 rounded-pill border transition-colors"
+            style={{ borderColor: 'var(--sage-light)', color: 'var(--ink-soft)' }}
+          >
+            Public site
+          </Link>
+          <button
+            onClick={handleLogout}
+            className="p-2 rounded-lg text-ink-soft hover:bg-bone hover:text-signal transition-colors"
+            title="Sign out"
+            aria-label="Sign out"
+          >
+            <LogOut size={16} />
           </button>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <AnimatePresence>
+      <div className="flex flex-1">
+        {/* Collapsible sidebar */}
+        <AnimatePresence initial={false}>
           {sidebarOpen && (
             <motion.nav
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 220, opacity: 1 }}
+              animate={{ width: 224, opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               className="flex-shrink-0 overflow-y-auto overflow-x-hidden border-r sticky top-14 h-[calc(100vh-3.5rem)] p-3"
@@ -108,8 +187,10 @@ export function AdminLayout() {
             >
               {NAV_GROUPS.map(group => (
                 <div key={group.label} className="mb-4">
-                  <p className="font-mono text-xs font-medium tracking-widest uppercase px-3 mb-1"
-                     style={{ color: 'var(--sage)' }}>
+                  <p
+                    className="font-mono text-xs font-medium tracking-widest uppercase px-3 mb-1"
+                    style={{ color: 'var(--sage)' }}
+                  >
                     {group.label}
                   </p>
                   {group.items.map(item => (
@@ -145,4 +226,3 @@ export function AdminLayout() {
     </div>
   );
 }
-

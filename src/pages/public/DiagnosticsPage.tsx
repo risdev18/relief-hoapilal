@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, FlaskConical, Scan, Calendar, Download, CheckCircle2, ShieldCheck, Heart, User, Activity, FileText, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button, DemoBadge, Badge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 interface DiagnosticTest {
   id: string;
@@ -84,7 +84,7 @@ export function DiagnosticsPage() {
   });
 
   const handleBookTest = (name: string, price: number) => {
-    setBookedMsg(`Slot reserved for "${name}" (Demo — ₹${price}). Token registered with NABL sample desk.`);
+    setBookedMsg(`Slot reserved for "${name}" (₹${price}). Complete booking via NABL Sample Desk or Consultation Wizard.`);
     setTimeout(() => setBookedMsg(null), 5000);
   };
 
@@ -109,7 +109,6 @@ export function DiagnosticsPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Robotic clinical biochemistry, 128-slice CT, and high-field 3T MRI scans. Direct digital reports linked to your UHID patient records.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 

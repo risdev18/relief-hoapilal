@@ -1,6 +1,5 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { DemoBadge } from '@/components/ui';
 
 const STATS = [
   {
@@ -48,7 +47,6 @@ export function StatsSection() {
               Excellence Measured in Patient Outcomes
             </h2>
           </div>
-          <DemoBadge />
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">

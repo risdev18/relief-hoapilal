@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Search, ChevronDown, HelpCircle } from 'lucide-react';
-import { DemoBadge } from '@/components/ui';
 
 interface FAQItem {
   category: string;
@@ -42,7 +41,6 @@ export function FAQsPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Find answers to common questions regarding admissions, insurance approvals, appointment rescheduling, and hospital protocols.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 

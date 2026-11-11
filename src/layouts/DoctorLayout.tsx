@@ -2,7 +2,6 @@
 import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
 import { LayoutDashboard, Calendar, Users, LogOut, Bell } from 'lucide-react';
-import { DemoBanner } from '@/components/layout/DemoBanner';
 import { cn } from '@/utils';
 
 const NAV = [
@@ -14,7 +13,6 @@ const NAV = [
 export function DoctorLayout() {
   return (
     <div className="min-h-screen flex flex-col" style={{ background: 'var(--bone)' }}>
-      <DemoBanner />
       <header className="bg-paper border-b border-sage-light sticky top-0 z-header">
         <div className="flex items-center justify-between px-4 md:px-6 h-14">
           <Link to="/" className="font-display font-semibold text-lg text-ink">

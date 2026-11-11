@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, ArrowRight, HeartPulse, Brain, Bone, Baby, Shield, Activity, User, Building, CheckCircle2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button, DemoBadge, Badge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 interface TreatmentItem {
   id: string;
@@ -143,7 +143,6 @@ export function TreatmentsPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Multispecialty surgical, interventional, and medical treatments adhering to NABH infection-control protocols with transparent pricing guidance.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 

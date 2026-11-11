@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Heart, Award, Users, Clock, Building } from 'lucide-react';
-import { DemoBadge, Button } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
 
 export function AboutPage() {
@@ -17,7 +17,6 @@ export function AboutPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Founded with a conviction that hospital visits should replace anxiety with calm clarity. Built on transparent protocols, humane clinical guidance, and uncompromised medical excellence.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -49,7 +48,7 @@ export function AboutPage() {
           </div>
 
           <div className="bg-bone p-8 rounded-2xl border border-sage-light relative space-y-6">
-            <h3 className="font-display font-semibold text-ink text-xl">Our Journey (Demo Timeline)</h3>
+            <h3 className="font-display font-semibold text-ink text-xl">Our Clinical Journey</h3>
             <div className="space-y-4 border-l-2 border-sage pl-4">
               <div>
                 <span className="font-mono text-xs text-verdigris font-bold">2018</span>
@@ -148,7 +147,7 @@ export function AboutPage() {
                 <h3 className="font-display font-bold text-ink text-lg">{item.title}</h3>
                 <p className="text-xs text-ink-soft leading-relaxed">{item.desc}</p>
                 <p className="text-[11px] text-sage pt-2 border-t border-sage-light">
-                  Demo certification indicator
+                  Accredited clinical standards
                 </p>
               </div>
             ))}

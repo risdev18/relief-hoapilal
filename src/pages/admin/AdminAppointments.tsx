@@ -1,136 +1,137 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Download, Calendar, Video, MapPin, Eye, X, RefreshCw } from 'lucide-react';
-import { Button, Badge, DemoBadge } from '@/components/ui';
-import { SupabaseService, SupabaseAppointmentRecord } from '@/services/supabaseService';
+// Admin Appointments — Live Supabase View, Status Controls & CSV Export (Zero Demo Data)
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  Search, Download, Video, MapPin, Eye, X, RefreshCw, CalendarX
+} from 'lucide-react';
+import { SupabaseService, type SupabaseAppointmentRecord } from '@/services/supabaseService';
+import { Badge, Button } from '@/components/ui';
+import { formatDate, formatINR } from '@/utils';
 
-interface AppointmentRecord {
-  id: string;
-  patientName: string;
-  uhid: string;
-  doctorName: string;
-  department: string;
-  date: string;
-  time: string;
-  type: 'in-person' | 'video';
-  status: 'Booked' | 'Confirmed' | 'Checked-in' | 'Completed' | 'Cancelled';
-  branch: string;
-}
-
-const DEMO_APPOINTMENTS: AppointmentRecord[] = [
-  { id: 'REL-2026-000841', patientName: 'Rahul Mehta', uhid: 'RH260192', doctorName: 'Dr. Priya Sharma', department: 'Cardiology', date: '2026-11-12', time: '10:30 AM', type: 'in-person', status: 'Confirmed', branch: 'Andheri' },
-  { id: 'REL-2026-000842', patientName: 'Sunita Patil', uhid: 'RH260481', doctorName: 'Dr. Rajesh Kulkarni', department: 'Orthopedics', date: '2026-11-12', time: '11:00 AM', type: 'in-person', status: 'Checked-in', branch: 'Andheri' },
-  { id: 'REL-2026-000843', patientName: 'Amit Saxena', uhid: 'RH260599', doctorName: 'Dr. Ananya Joshi', department: 'Pediatrics', date: '2026-11-12', time: '11:30 AM', type: 'video', status: 'Confirmed', branch: 'Online' },
-  { id: 'REL-2026-000844', patientName: 'Sneha Deshmukh', uhid: 'RH260312', doctorName: 'Dr. Meera Patel', department: 'Dermatology', date: '2026-11-12', time: '12:00 PM', type: 'in-person', status: 'Booked', branch: 'Thane' },
-  { id: 'REL-2026-000845', patientName: 'Farhan Khan', uhid: 'RH260718', doctorName: 'Dr. Arun Nair', department: 'General Medicine', date: '2026-11-12', time: '02:00 PM', type: 'in-person', status: 'Completed', branch: 'Pune' },
-  { id: 'REL-2026-000846', patientName: 'Kavita Rao', uhid: 'RH260844', doctorName: 'Dr. Priya Sharma', department: 'Cardiology', date: '2026-11-12', time: '02:30 PM', type: 'video', status: 'Cancelled', branch: 'Online' },
-  { id: 'REL-2026-000847', patientName: 'Vikram Seth', uhid: 'RH260901', doctorName: 'Dr. Sunita Desai', department: 'Neurology', date: '2026-11-13', time: '10:00 AM', type: 'in-person', status: 'Confirmed', branch: 'Andheri' },
-  { id: 'REL-2026-000848', patientName: 'Pooja Hegde', uhid: 'RH260124', doctorName: 'Dr. Deepa Krishnan', department: 'Gynecology', date: '2026-11-13', time: '10:30 AM', type: 'in-person', status: 'Confirmed', branch: 'Pune' },
-];
+const STATUS_BADGE: Record<SupabaseAppointmentRecord['status'], 'default' | 'saffron' | 'signal' | 'night'> = {
+  booked: 'default',
+  confirmed: 'default',
+  checked_in: 'saffron',
+  completed: 'night',
+  cancelled: 'signal',
+  rescheduled: 'saffron',
+};
 
 export function AdminAppointments() {
-  const [appointments, setAppointments] = useState<AppointmentRecord[]>(DEMO_APPOINTMENTS);
+  const [appointments, setAppointments] = useState<SupabaseAppointmentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [selectedAppt, setSelectedAppt] = useState<AppointmentRecord | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [selectedAppt, setSelectedAppt] = useState<SupabaseAppointmentRecord | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  // Sync with Supabase Cloud & Local Persistence
-  const loadLiveAppointments = async () => {
-    setIsLoading(true);
+  const loadAppointments = useCallback(async () => {
+    setLoading(true);
     try {
-      const records = await SupabaseService.getAppointments();
-      if (records && records.length > 0) {
-        const mapped: AppointmentRecord[] = records.map((r: SupabaseAppointmentRecord, idx: number) => ({
-          id: r.appointment_id,
-          patientName: r.patient_name || 'Patient',
-          uhid: `RH260${(idx + 100).toString()}`,
-          doctorName: r.doctor_name,
-          department: r.department_name,
-          date: r.appointment_date,
-          time: r.appointment_time,
-          type: r.consultation_type || 'in-person',
-          status: (r.status as any) || 'Confirmed',
-          branch: r.branch_name || 'Andheri',
-        }));
-
-        // Merge with demo ensuring unique ids
-        const map = new Map<string, AppointmentRecord>();
-        mapped.forEach(a => map.set(a.id, a));
-        DEMO_APPOINTMENTS.forEach(a => {
-          if (!map.has(a.id)) map.set(a.id, a);
-        });
-        setAppointments(Array.from(map.values()));
-      }
-    } catch (err) {
-      console.warn('Sync error:', err);
+      const data = await SupabaseService.adminGetAllAppointments();
+      setAppointments(data);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadLiveAppointments();
-
-    const handleCreated = () => {
-      loadLiveAppointments();
-    };
-    window.addEventListener('relif_appointment_created', handleCreated);
-    return () => window.removeEventListener('relif_appointment_created', handleCreated);
   }, []);
 
-  const filtered = appointments.filter(a => {
-    const matchesSearch = a.patientName.toLowerCase().includes(search.toLowerCase()) ||
-                          a.id.toLowerCase().includes(search.toLowerCase()) ||
-                          a.doctorName.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter ? a.status === statusFilter : true;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    loadAppointments();
+  }, [loadAppointments]);
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case 'Confirmed': return 'default';
-      case 'Checked-in': return 'saffron';
-      case 'Completed': return 'verdigris';
-      case 'Cancelled': return 'signal';
-      default: return 'night';
+  const handleStatusChange = async (id: string, status: SupabaseAppointmentRecord['status']) => {
+    setUpdatingId(id);
+    try {
+      await SupabaseService.adminUpdateAppointmentStatus(id, status);
+      setAppointments(prev => prev.map(a => (a.id === id ? { ...a, status } : a)));
+      setSelectedAppt(prev => (prev?.id === id ? { ...prev, status } : prev));
+    } finally {
+      setUpdatingId(null);
     }
   };
+
+  const handleExportCSV = () => {
+    const headers = [
+      'Booking Ref', 'Patient Name', 'Email', 'Phone', 'Doctor',
+      'Department', 'Branch', 'Date', 'Time', 'Type', 'Total INR', 'Payment Mode', 'Status',
+    ];
+    const rows = filtered.map(a => [
+      a.booking_ref,
+      a.patient_name,
+      a.patient_email,
+      a.patient_phone,
+      a.doctor_name,
+      a.department_name,
+      a.branch_name,
+      a.appointment_date,
+      a.appointment_time,
+      a.consultation_type,
+      a.total_amount,
+      a.payment_mode,
+      a.status,
+    ]);
+    const csv = [headers, ...rows]
+      .map(r => r.map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `relif-appointments-${new Date().toISOString().slice(0, 10)}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return appointments.filter(a => {
+      const matchSearch =
+        !q ||
+        a.booking_ref.toLowerCase().includes(q) ||
+        a.patient_name.toLowerCase().includes(q) ||
+        a.patient_email.toLowerCase().includes(q) ||
+        a.doctor_name.toLowerCase().includes(q);
+      const matchStatus = !statusFilter || a.status === statusFilter;
+      return matchSearch && matchStatus;
+    });
+  }, [appointments, search, statusFilter]);
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold text-ink">Appointments</h1>
-            <DemoBadge />
-          </div>
-          <p className="text-ink-soft text-sm">Real-time scheduling overview, consultations, and status tracking.</p>
+          <h1 className="font-display text-3xl font-bold text-ink">Appointments</h1>
+          <p className="text-ink-soft text-sm">
+            Live hospital appointment queue, check-in progression, and payment verification from Supabase.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={loadLiveAppointments}
-            leftIcon={<RefreshCw size={14} className={isLoading ? 'animate-spin text-verdigris' : ''} />}
+            onClick={loadAppointments}
+            leftIcon={<RefreshCw size={14} className={loading ? 'animate-spin text-verdigris' : ''} />}
           >
-            {isLoading ? 'Syncing...' : 'Sync Supabase'}
+            Refresh
           </Button>
-          <Button variant="secondary" size="sm" leftIcon={<Download size={14} />} onClick={() => alert('Demo Export: PDF summary created.')}>
-            Export PDF
-          </Button>
-          <Button variant="secondary" size="sm" leftIcon={<Download size={14} />} onClick={() => alert('Demo Export: Excel spreadsheet created.')}>
-            Export Excel
+          <Button
+            variant="secondary"
+            size="sm"
+            leftIcon={<Download size={14} />}
+            onClick={handleExportCSV}
+            disabled={filtered.length === 0}
+          >
+            Export CSV
           </Button>
         </div>
       </div>
 
-      {/* Filter Row */}
+      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3 bg-paper p-3 rounded-xl border border-sage-light">
         <div className="relative flex-1 min-w-[200px]">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
           <input
             type="text"
-            placeholder="Search by Patient, ID or Doctor..."
+            placeholder="Search by booking ref, patient, email, or doctor…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="input pl-9 py-2 text-sm"
@@ -142,11 +143,12 @@ export function AdminAppointments() {
           className="input py-2 text-sm w-44"
         >
           <option value="">All Statuses</option>
-          <option value="Booked">Booked</option>
-          <option value="Confirmed">Confirmed</option>
-          <option value="Checked-in">Checked-in</option>
-          <option value="Completed">Completed</option>
-          <option value="Cancelled">Cancelled</option>
+          <option value="booked">Booked</option>
+          <option value="confirmed">Confirmed</option>
+          <option value="checked_in">Checked-in</option>
+          <option value="completed">Completed</option>
+          <option value="cancelled">Cancelled</option>
+          <option value="rescheduled">Rescheduled</option>
         </select>
       </div>
 
@@ -156,115 +158,156 @@ export function AdminAppointments() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th className="py-3 px-4">Appt ID & Type</th>
-                <th className="py-3 px-4">Patient</th>
-                <th className="py-3 px-4">Doctor & Dept</th>
-                <th className="py-3 px-4">Schedule</th>
-                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-left">Ref &amp; Mode</th>
+                <th className="py-3 px-4 text-left">Patient</th>
+                <th className="py-3 px-4 text-left">Doctor &amp; Dept</th>
+                <th className="py-3 px-4 text-left">Schedule</th>
+                <th className="py-3 px-4 text-left">Fee</th>
+                <th className="py-3 px-4 text-left">Status</th>
                 <th className="py-3 px-4 text-right">Details</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(a => (
-                <tr key={a.id}>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-2">
-                      {a.type === 'video' ? (
-                        <span className="p-1.5 rounded-lg bg-mint text-verdigris" title="Video Consult">
-                          <Video size={14} />
-                        </span>
-                      ) : (
-                        <span className="p-1.5 rounded-lg bg-bone text-ink-soft" title="In-person Visit">
-                          <MapPin size={14} />
-                        </span>
-                      )}
-                      <div>
-                        <span className="id-mono text-xs block">{a.id}</span>
-                        <span className="text-[11px] text-ink-soft capitalize">{a.branch}</span>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="py-3 px-4">
-                    <p className="font-semibold text-ink text-sm">{a.patientName}</p>
-                    <p className="font-mono text-xs text-ink-soft">{a.uhid}</p>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    <p className="font-medium text-ink">{a.doctorName}</p>
-                    <p className="text-xs text-ink-soft">{a.department}</p>
-                  </td>
-                  <td className="py-3 px-4 text-sm">
-                    <p className="text-ink font-medium">{a.time}</p>
-                    <p className="text-xs text-ink-soft">{a.date}</p>
-                  </td>
-                  <td className="py-3 px-4">
-                    <Badge variant={getStatusVariant(a.status)} size="sm">
-                      {a.status}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => setSelectedAppt(a)}
-                      className="p-1.5 rounded-lg text-ink-soft hover:bg-bone hover:text-ink transition-colors"
-                      title="Inspect record"
-                    >
-                      <Eye size={16} />
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-sm text-ink-soft">
+                    Loading live appointments…
                   </td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={7} className="py-14 text-center">
+                    <CalendarX size={28} className="mx-auto text-sage mb-2" />
+                    <p className="text-sm font-medium text-ink">No appointments found</p>
+                    <p className="text-xs text-ink-soft mt-1">
+                      Patient bookings created through the booking wizard appear here in real time.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(a => (
+                  <tr key={a.id}>
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        {a.consultation_type === 'video' ? (
+                          <span className="p-1.5 rounded-lg bg-mint text-verdigris" title="Video Consult">
+                            <Video size={14} />
+                          </span>
+                        ) : (
+                          <span className="p-1.5 rounded-lg bg-bone text-ink-soft" title="In-clinic Visit">
+                            <MapPin size={14} />
+                          </span>
+                        )}
+                        <div>
+                          <span className="id-mono text-xs block">{a.booking_ref}</span>
+                          <span className="text-[11px] text-ink-soft">{a.branch_name}</span>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4">
+                      <p className="font-semibold text-ink text-sm">{a.patient_name}</p>
+                      <p className="font-mono text-xs text-ink-soft">{a.patient_phone || a.patient_email}</p>
+                    </td>
+                    <td className="py-3 px-4 text-sm">
+                      <p className="font-medium text-ink">{a.doctor_name}</p>
+                      <p className="text-xs text-ink-soft">{a.department_name}</p>
+                    </td>
+                    <td className="py-3 px-4 text-sm">
+                      <p className="text-ink font-medium">{a.appointment_time}</p>
+                      <p className="text-xs text-ink-soft">{formatDate(a.appointment_date)}</p>
+                    </td>
+                    <td className="py-3 px-4 text-sm font-mono text-ink">
+                      {formatINR(a.total_amount)}
+                      <span className="block text-[10px] text-ink-soft">
+                        {a.payment_status}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4">
+                      <Badge variant={STATUS_BADGE[a.status]} size="sm">
+                        {a.status.replace('_', ' ')}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => setSelectedAppt(a)}
+                        className="p-1.5 rounded-lg text-ink-soft hover:bg-bone hover:text-ink transition-colors"
+                        title="Inspect & update status"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Quick Details Modal */}
+      {/* Inspection & Status Modal */}
       {selectedAppt && (
         <div className="fixed inset-0 z-modal flex items-center justify-center bg-night/40 backdrop-blur-sm p-4">
           <div className="bg-paper rounded-2xl max-w-md w-full p-6 border border-sage-light shadow-warm-lg">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <span className="id-mono text-xs">{selectedAppt.id}</span>
+                <span className="id-mono text-xs">{selectedAppt.booking_ref}</span>
                 <h3 className="font-display text-xl font-bold text-ink mt-1">Appointment Details</h3>
               </div>
               <button onClick={() => setSelectedAppt(null)} className="p-1 text-ink-soft hover:text-ink">
                 <X size={18} />
               </button>
             </div>
-            <div className="space-y-3 text-sm border-t border-b border-sage-light py-4 mb-4">
+            <div className="space-y-2.5 text-sm border-t border-b border-sage-light py-4 mb-4">
               <div className="flex justify-between">
-                <span className="text-ink-soft">Patient:</span>
-                <span className="font-medium text-ink">{selectedAppt.patientName} ({selectedAppt.uhid})</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-ink-soft">Consultant:</span>
-                <span className="font-medium text-ink">{selectedAppt.doctorName}</span>
+                <span className="text-ink-soft">Patient</span>
+                <span className="font-medium text-ink">{selectedAppt.patient_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-soft">Department:</span>
-                <span className="font-medium text-ink">{selectedAppt.department}</span>
+                <span className="text-ink-soft">Contact</span>
+                <span className="font-mono text-xs text-ink">{selectedAppt.patient_phone || selectedAppt.patient_email}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-soft">Date & Time:</span>
-                <span className="font-medium text-ink">{selectedAppt.date} at {selectedAppt.time}</span>
+                <span className="text-ink-soft">Doctor</span>
+                <span className="font-medium text-ink">{selectedAppt.doctor_name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-ink-soft">Mode & Location:</span>
-                <span className="font-medium text-ink capitalize">{selectedAppt.type} · {selectedAppt.branch}</span>
+                <span className="text-ink-soft">Schedule</span>
+                <span className="font-medium text-ink">
+                  {formatDate(selectedAppt.appointment_date)} · {selectedAppt.appointment_time}
+                </span>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-ink-soft">Status:</span>
-                <Badge variant={getStatusVariant(selectedAppt.status)} size="sm">
-                  {selectedAppt.status}
-                </Badge>
+              <div className="flex justify-between">
+                <span className="text-ink-soft">Payment</span>
+                <span className="font-mono text-ink">
+                  {formatINR(selectedAppt.total_amount)} ({selectedAppt.payment_mode.replace('_', ' ')} · {selectedAppt.payment_status})
+                </span>
               </div>
+              {selectedAppt.symptoms && (
+                <div className="pt-2 border-t border-sage-light">
+                  <span className="text-xs text-ink-soft block mb-1">Symptoms / Notes</span>
+                  <p className="text-xs text-ink bg-bone rounded-lg p-2">{selectedAppt.symptoms}</p>
+                </div>
+              )}
             </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" className="flex-1" onClick={() => setSelectedAppt(null)}>
-                Dismiss
-              </Button>
-              <Button variant="secondary" className="flex-1" onClick={() => { alert('Demo action: Status updated.'); setSelectedAppt(null); }}>
-                Update Status
-              </Button>
+
+            <div className="space-y-2">
+              <label className="block text-xs font-medium text-ink-soft">Update Visit Status</label>
+              <div className="flex flex-wrap gap-2">
+                {(['booked', 'confirmed', 'checked_in', 'completed', 'cancelled'] as const).map(st => (
+                  <button
+                    key={st}
+                    disabled={updatingId === selectedAppt.id}
+                    onClick={() => handleStatusChange(selectedAppt.id, st)}
+                    className={`px-3 py-1.5 rounded-pill text-xs font-medium border transition-colors ${
+                      selectedAppt.status === st
+                        ? 'bg-verdigris text-white border-verdigris'
+                        : 'bg-bone text-ink border-sage-light hover:border-verdigris'
+                    }`}
+                  >
+                    {st.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -272,4 +315,3 @@ export function AdminAppointments() {
     </div>
   );
 }
-

@@ -5,7 +5,7 @@ import {
   Video, User, Clock, Calendar, AlertCircle, X, Check
 } from 'lucide-react';
 import { cn } from '@/utils';
-import { Badge, DemoBadge, Button, Input } from '@/components/ui';
+import { Badge, Button, Input } from '@/components/ui';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface DaySlot {
@@ -199,7 +199,6 @@ export function DoctorSchedule() {
             <p className="text-ink-soft mt-1">Manage your appointments and availability</p>
           </div>
           <div className="flex items-center gap-3">
-            <DemoBadge />
             <Button variant="primary" size="sm" leftIcon={<Plus size={14} />}>
               Add Availability
             </Button>

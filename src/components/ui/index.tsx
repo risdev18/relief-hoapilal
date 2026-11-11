@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { cn } from '@/utils';
 import { motion } from 'framer-motion';
+import { QRCodeSVG } from 'qrcode.react';
 
 // ============================================================
 // Button Component
@@ -172,13 +173,6 @@ export function Badge({ variant = 'default', size = 'md', children, className }:
 }
 
 // ============================================================
-// Demo Badge (Suppressed for authentic presentation)
-// ============================================================
-export function DemoBadge({ className }: { className?: string }) {
-  return null;
-}
-
-// ============================================================
 // Availability Dot
 // ============================================================
 interface AvailabilityDotProps {
@@ -344,7 +338,9 @@ export function SectionHeader({ eyebrow, title, subtitle, align = 'left', classN
       )}
       <h2 className="section-heading text-balance mb-4">{title}</h2>
       {subtitle && (
-        <p className="section-subheading max-w-2xl">{subtitle}</p>
+        <p className={cn('section-subheading max-w-2xl', align === 'center' && 'mx-auto')}>
+          {subtitle}
+        </p>
       )}
     </div>
   );
@@ -362,12 +358,11 @@ interface StatCardProps {
   className?: string;
 }
 
-export function StatCard({ label, value, unit, trend, isDemo = true, className }: StatCardProps) {
+export function StatCard({ label, value, unit, trend, className }: StatCardProps) {
   return (
     <div className={cn('card p-6', className)}>
       <div className="flex items-start justify-between mb-2">
         <p className="text-sm font-medium text-ink-soft">{label}</p>
-        {isDemo && <DemoBadge />}
       </div>
       <div className="flex items-baseline gap-1">
         <span className="stat-number">{value}</span>
@@ -443,28 +438,125 @@ export function TokenCard({ token, department, doctor, position, estimatedWait, 
 }
 
 // ============================================================
-// Stepper (Relif Line)
+// Doctor 4:5 Portrait with Skeleton & Designed Green-Gradient Initials Fallback
+// ============================================================
+interface DoctorAvatarProps {
+  name: string;
+  photoUrl?: string | null;
+  alt?: string;
+  className?: string;
+  aspect?: '4/5' | 'square';
+  rounded?: 'arch' | 'card' | 'circle';
+  priority?: boolean;
+}
+
+function getDoctorInitials(name: string): string {
+  const clean = name.replace(/^Dr\.?\s+/i, '').trim();
+  const parts = clean.split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return 'DR';
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+}
+
+export function DoctorAvatar({
+  name,
+  photoUrl,
+  alt,
+  className,
+  aspect = '4/5',
+  rounded = 'card',
+  priority = false,
+}: DoctorAvatarProps) {
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  const shapeClass =
+    rounded === 'arch'
+      ? 'rounded-t-full rounded-b-xl'
+      : rounded === 'circle'
+      ? 'rounded-full'
+      : 'rounded-2xl';
+
+  const aspectStyle = aspect === '4/5' ? { aspectRatio: '4 / 5' } : { aspectRatio: '1 / 1' };
+  const initials = getDoctorInitials(name);
+
+  return (
+    <div
+      className={cn(
+        'relative overflow-hidden bg-gradient-to-b from-mint to-verdigris-deep/85 border border-sage-light flex items-center justify-center select-none',
+        shapeClass,
+        className
+      )}
+      style={aspectStyle}
+    >
+      {/* Skeleton pulse while photo loads */}
+      {photoUrl && !errored && !loaded && (
+        <div className="absolute inset-0 skeleton" aria-hidden="true" />
+      )}
+
+      {photoUrl && !errored ? (
+        <img
+          src={photoUrl}
+          alt={alt || `Portrait of ${name}`}
+          loading={priority ? 'eager' : 'lazy'}
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+          className={cn(
+            'w-full h-full object-cover object-top transition-opacity duration-300',
+            loaded ? 'opacity-100' : 'opacity-0'
+          )}
+        />
+      ) : (
+        <div
+          className="w-full h-full flex flex-col items-center justify-center text-white"
+          style={{
+            background: 'linear-gradient(155deg, #1F7A6B 0%, #10261F 100%)',
+          }}
+        >
+          <span className="font-display font-bold text-2xl sm:text-3xl tracking-tight text-paper">
+            {initials}
+          </span>
+          <span className="font-mono text-[9px] uppercase tracking-widest text-mint/80 mt-1">
+            Relif Faculty
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// Stepper (Relif Line — Compact Mobile + Full Tooltip Labels)
 // ============================================================
 interface StepperProps {
-  steps: { label: string; description?: string }[];
+  steps: { label: string; shortLabel?: string; description?: string }[];
   currentStep: number;
   className?: string;
 }
 
 export function Stepper({ steps, currentStep, className }: StepperProps) {
-  const progress = (currentStep / (steps.length - 1)) * 100;
-  
+  const progress = steps.length > 1 ? (currentStep / (steps.length - 1)) * 100 : 100;
+
   return (
     <div className={cn('w-full', className)}>
+      {/* Compact mobile indicator */}
+      <div className="flex sm:hidden items-center justify-between mb-2">
+        <span className="font-mono text-xs font-semibold text-verdigris uppercase tracking-wider">
+          Step {currentStep + 1} of {steps.length}
+        </span>
+        <span className="text-xs font-semibold text-ink">
+          {steps[currentStep]?.label}
+        </span>
+      </div>
+
       {/* Relif Line progress bar */}
-      <div className="relative mb-6 h-6">
+      <div className="relative mb-4 sm:mb-6 h-5">
         <svg
           viewBox="0 0 400 24"
           fill="none"
           className="w-full h-full"
           preserveAspectRatio="none"
         >
-          {/* Background line */}
           <path
             d="M4 12 C60 12 80 4 120 4 C160 4 180 20 220 20 C260 20 280 8 320 8 C360 8 380 12 396 12"
             stroke="var(--sage-light)"
@@ -472,7 +564,6 @@ export function Stepper({ steps, currentStep, className }: StepperProps) {
             strokeLinecap="round"
             fill="none"
           />
-          {/* Progress line */}
           <path
             d="M4 12 C60 12 80 4 120 4 C160 4 180 20 220 20 C260 20 280 8 320 8 C360 8 380 12 396 12"
             stroke="var(--verdigris)"
@@ -485,18 +576,17 @@ export function Stepper({ steps, currentStep, className }: StepperProps) {
           />
         </svg>
       </div>
-      
+
       {/* Step labels */}
-      <div className="flex justify-between">
+      <div className="hidden sm:flex justify-between">
         {steps.map((step, i) => (
           <div
             key={i}
-            className={cn('flex flex-col items-center text-center', {
-              'flex-1': true,
-            })}
+            title={step.label}
+            className="flex flex-col items-center text-center flex-1 min-w-0 px-1"
           >
             <div className={cn(
-              'w-6 h-6 rounded-full border-2 mb-2 flex items-center justify-center',
+              'w-6 h-6 rounded-full border-2 mb-1.5 flex items-center justify-center transition-colors',
               {
                 'bg-verdigris border-verdigris text-white': i < currentStep,
                 'bg-saffron border-saffron text-ink':       i === currentStep,
@@ -511,12 +601,12 @@ export function Stepper({ steps, currentStep, className }: StepperProps) {
                 <span className="text-xs font-mono font-bold">{i + 1}</span>
               )}
             </div>
-            <p className={cn('text-xs font-medium leading-tight', {
+            <p className={cn('text-xs font-medium leading-tight truncate max-w-full', {
               'text-verdigris': i < currentStep,
-              'text-ink':       i === currentStep,
+              'text-ink font-semibold': i === currentStep,
               'text-ink-soft':  i > currentStep,
             })}>
-              {step.label}
+              {step.shortLabel || step.label}
             </p>
           </div>
         ))}
@@ -602,19 +692,14 @@ export function QRCard({ appointmentId, patientName, date, time, doctor, departm
       </div>
       
       <div className="flex justify-center mb-6">
-        {/* QR placeholder — real QR uses qrcode.react */}
-        <div className="w-32 h-32 bg-bone rounded-lg border border-sage-light flex items-center justify-center">
-          <div className="grid grid-cols-5 gap-0.5">
-            {Array.from({ length: 25 }).map((_, i) => (
-              <div
-                key={i}
-                className={cn('w-4 h-4', {
-                  'bg-ink': (i * 7 + i * 3) % 5 !== 0,
-                  'bg-transparent': (i * 7 + i * 3) % 5 === 0,
-                })}
-              />
-            ))}
-          </div>
+        <div className="p-3 bg-paper rounded-xl border border-sage-light shadow-warm-xs">
+          <QRCodeSVG
+            value={qrValue || appointmentId}
+            size={128}
+            bgColor="#FAF6EE"
+            fgColor="#10261F"
+            level="M"
+          />
         </div>
       </div>
       

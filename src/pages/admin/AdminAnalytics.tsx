@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Download, Calendar, TrendingUp } from 'lucide-react';
-import { Button, DemoBadge } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 const APPOINTMENTS_TREND = [
   { day: 'Nov 01', appointments: 34 },
@@ -37,10 +37,7 @@ export function AdminAnalytics() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold text-ink">Clinical & Financial Analytics</h1>
-            <DemoBadge />
-          </div>
+          <h1 className="font-display text-3xl font-bold text-ink">Clinical & Financial Analytics</h1>
           <p className="text-ink-soft text-sm">Aggregated operational metrics, bed occupancy rates, and transaction velocity.</p>
         </div>
         <div className="flex items-center gap-2">
@@ -54,8 +51,8 @@ export function AdminAnalytics() {
             <option>This Quarter</option>
             <option>Year to Date</option>
           </select>
-          <Button variant="secondary" size="sm" leftIcon={<Download size={14} />} onClick={() => alert('Demo export generated.')}>
-            Export CSV
+          <Button variant="secondary" size="sm" leftIcon={<Download size={14} />} onClick={() => window.print()}>
+            Print Report
           </Button>
         </div>
       </div>
@@ -100,7 +97,7 @@ export function AdminAnalytics() {
               <h3 className="font-display font-semibold text-ink text-lg">Departmental Revenue (₹)</h3>
               <p className="text-xs text-ink-soft">Recorded transactions via verified payment orders</p>
             </div>
-            <span className="demo-badge">Demo Ledger</span>
+            <span className="chip text-xs font-mono">Verified Ledger</span>
           </div>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">

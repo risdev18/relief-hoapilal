@@ -1,75 +1,137 @@
-// LoginPage.tsx — Relif Hospital Patient Portal Authentication
-// Direct Supabase Auth Integration + New Patient Registration Link + Demo Access
+// LoginPage.tsx — Relif Care Multispecialty Portal Authentication
+// Strict Supabase Auth (Password + Email OTP + Mobile Phone OTP), ZERO demo accounts.
 
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Eye, EyeOff, User, ArrowRight, ShieldCheck, CheckCircle2, AlertCircle, Sparkles, UserPlus } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Eye, EyeOff, ShieldCheck, AlertCircle, UserPlus, Mail, Phone, Lock, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button, Input } from '@/components/ui';
 import { ROUTES } from '@/config/constants';
-import { AuthService, PatientUser } from '@/services/authService';
+import { AuthService } from '@/services/authService';
+import { cn } from '@/utils';
 
-// ── Zod schema ──────────────────────────────────────────────────────────────
-const loginSchema = z.object({
-  email:    z.string().min(1, 'Email or UHID is required'),
-  password: z.string().min(4, 'Password must be at least 4 characters'),
-});
-
-type LoginFormValues = z.infer<typeof loginSchema>;
+type AuthMode = 'password' | 'email_otp' | 'phone_otp';
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const redirectPath = searchParams.get('redirect');
+
+  const [mode, setMode] = useState<AuthMode>('password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+
   const [showPassword, setShowPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [activePatient, setActivePatient] = useState<PatientUser | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const patient = AuthService.getActivePatient();
-    setActivePatient(patient);
-  }, []);
-
-  const {
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
-  });
-
-  const onSubmit = async (data: LoginFormValues) => {
-    setIsSubmitting(true);
-    setErrorMessage(null);
-
-    const result = await AuthService.signInWithSupabase(data.email, data.password);
-
-    if (result.success) {
-      setIsSubmitting(false);
-      navigate(ROUTES.patientDashboard);
-    } else {
-      setIsSubmitting(false);
-      setErrorMessage(
-        result.error || 'Authentication failed. Please verify your Supabase email and password, or register as a new patient.'
+    const active = AuthService.getActivePatient();
+    if (active?.isLoggedIn) {
+      navigate(
+        redirectPath ||
+          (active.role === 'admin' ? ROUTES.adminDashboard : ROUTES.patientDashboard),
+        { replace: true }
       );
+    }
+  }, [navigate, redirectPath]);
+
+  const handleSuccessRedirect = (role: string) => {
+    if (redirectPath) {
+      navigate(redirectPath);
+      return;
+    }
+    navigate(role === 'admin' ? ROUTES.adminDashboard : ROUTES.patientDashboard);
+  };
+
+  const handlePasswordLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
+
+    if (!email.trim() || password.length < 6) {
+      setErrorMessage('Enter your registered email and password (minimum 6 characters).');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result = await AuthService.signInWithSupabase(email, password);
+    setIsSubmitting(false);
+
+    if (result.success && result.user) {
+      handleSuccessRedirect(result.user.role);
+    } else {
+      setErrorMessage(result.error || 'Invalid credentials. Please verify your email and password.');
     }
   };
 
-  const handleDemoLogin = () => {
-    AuthService.loginAsDemo();
-    navigate(ROUTES.patientDashboard);
+  const handleSendOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    setInfoMessage(null);
+    setIsSubmitting(true);
+
+    if (mode === 'email_otp') {
+      if (!email.trim() || !email.includes('@')) {
+        setIsSubmitting(false);
+        setErrorMessage('Enter a valid email address to receive your one-time code.');
+        return;
+      }
+      const res = await AuthService.sendEmailOtp(email);
+      setIsSubmitting(false);
+      if (res.success) {
+        setOtpSent(true);
+        setInfoMessage(`A 6-digit verification code has been sent to ${email}.`);
+      } else {
+        setErrorMessage(res.error || 'Could not dispatch email OTP.');
+      }
+    } else {
+      const digits = phone.replace(/\D/g, '');
+      if (digits.length < 10) {
+        setIsSubmitting(false);
+        setErrorMessage('Enter a valid 10-digit Indian mobile number.');
+        return;
+      }
+      const res = await AuthService.sendPhoneOtp(phone);
+      setIsSubmitting(false);
+      if (res.success) {
+        setOtpSent(true);
+        setInfoMessage(`An SMS OTP has been sent to +91 ${digits.slice(-10)}.`);
+      } else {
+        setErrorMessage(res.error || 'Phone OTP delivery is not configured on this Supabase project yet. Use Email OTP or Password login.');
+      }
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage(null);
+    if (otpCode.trim().length < 6) {
+      setErrorMessage('Enter the 6-digit code sent to your inbox/phone.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const res =
+      mode === 'email_otp'
+        ? await AuthService.verifyEmailOtp(email, otpCode)
+        : await AuthService.verifyPhoneOtp(phone, otpCode);
+    setIsSubmitting(false);
+
+    if (res.success && res.user) {
+      handleSuccessRedirect(res.user.role);
+    } else {
+      setErrorMessage(res.error || 'Verification code invalid or expired.');
+    }
   };
 
   return (
     <div className="min-h-screen flex bg-paper">
-      {/* ── Left: Hospital Branding & Reassurance ────────────────────── */}
+      {/* Left: Hospital Clinical Trust Panel */}
       <div
         className="hidden lg:flex flex-1 relative overflow-hidden bg-bone items-center justify-center p-12 border-r border-sage-light"
         aria-hidden="true"
@@ -83,159 +145,227 @@ export function LoginPage() {
             <em className="italic font-normal text-verdigris">always with you.</em>
           </h2>
           <p className="text-sm text-ink-soft leading-relaxed">
-            Access NABL-verified pathology reports, active medication protocols, doctor appointments, and hospital invoices under ABDM privacy standards.
+            Access NABL-verified pathology reports, appointments, GST receipts, and prescriptions protected by ABDM &amp; DPDP healthcare standards.
           </p>
-          <div className="pt-4 flex justify-center gap-6 text-xs text-ink-soft font-mono">
-            <span>✓ 256-Bit SSL Encrypted</span>
-            <span>✓ ABHA Integrated</span>
-            <span>✓ Verified UHID</span>
-          </div>
-
-          <div className="p-4 rounded-2xl bg-paper/70 border border-sage-light text-left text-xs text-ink-soft space-y-1.5 mt-8">
-            <p className="font-semibold text-ink flex items-center gap-1.5">
-              <Sparkles size={13} className="text-saffron" />
-              Supabase Auth Integrated
-            </p>
-            <p>
-              Log in with any email and password registered in your Supabase project. If you haven't registered yet, click <strong>"New Patient Registration"</strong>.
-            </p>
+          <div className="pt-4 flex flex-wrap justify-center gap-4 text-xs text-ink-soft font-mono">
+            <span>256-Bit TLS Encrypted</span>
+            <span>·</span>
+            <span>ABHA Integrated</span>
+            <span>·</span>
+            <span>Verified UHID</span>
           </div>
         </div>
       </div>
 
-      {/* ── Right: Login Form ────────────────────────────────────────────── */}
+      {/* Right: Auth Panel */}
       <div className="flex-1 flex items-center justify-center p-6 sm:p-12">
-        <div className="w-full max-w-md space-y-8">
+        <div className="w-full max-w-md space-y-6">
           <div>
-            <Link to={ROUTES.home} className="inline-block mb-4">
+            <Link to={ROUTES.home} className="inline-flex items-baseline gap-1.5 mb-4">
               <span className="font-display font-bold text-2xl text-ink">relif</span>
-              <span className="font-mono text-xs text-saffron uppercase ml-1 font-bold">Care</span>
+              <span className="font-mono text-xs text-saffron uppercase font-bold">Care</span>
             </Link>
-            <h1 className="font-display text-3xl font-bold text-ink mb-1">Patient Portal Login</h1>
-            <p className="text-sm text-ink-soft">Sign in with your registered Supabase email, mobile, or UHID.</p>
+            <h1 className="font-display text-3xl font-bold text-ink mb-1">Patient Portal Sign In</h1>
+            <p className="text-sm text-ink-soft">
+              Sign in securely with Email OTP, Password, or Mobile OTP.
+            </p>
           </div>
 
-          {/* New Patient Registration Banner */}
+          {/* New Patient CTA */}
           <div className="p-4 rounded-2xl bg-bone border border-sage flex items-center justify-between gap-3 shadow-warm-xs">
             <div className="space-y-0.5">
               <span className="text-xs font-bold text-ink flex items-center gap-1.5">
                 <UserPlus size={14} className="text-verdigris" />
-                Are you a new patient?
+                New to Relif Care?
               </span>
-              <p className="text-[11px] text-ink-soft">Create your official UHID and patient dossier in 1 minute.</p>
+              <p className="text-[11px] text-ink-soft">Create your UHID patient profile in under a minute.</p>
             </div>
             <Link
               to={ROUTES.register}
-              className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-verdigris text-white hover:bg-verdigris-deep transition-all shadow-xs flex-shrink-0"
+              className="px-3.5 py-1.5 text-xs font-semibold rounded-full bg-verdigris text-white hover:bg-verdigris-deep transition-all flex-shrink-0"
             >
-              Register Now →
+              Register →
             </Link>
           </div>
 
-          {/* Error Message Alert */}
+          {/* Auth Mode Tabs */}
+          <div className="grid grid-cols-3 gap-1.5 p-1 bg-bone rounded-xl border border-sage-light">
+            {[
+              { id: 'password', label: 'Password', icon: Lock },
+              { id: 'email_otp', label: 'Email OTP', icon: Mail },
+              { id: 'phone_otp', label: 'Mobile OTP', icon: Phone },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              const active = mode === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setMode(tab.id as AuthMode);
+                    setOtpSent(false);
+                    setOtpCode('');
+                    setErrorMessage(null);
+                    setInfoMessage(null);
+                  }}
+                  className={cn(
+                    'flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all',
+                    active
+                      ? 'bg-paper text-verdigris-deep shadow-warm-xs border border-sage-light'
+                      : 'text-ink-soft hover:text-ink'
+                  )}
+                >
+                  <Icon size={13} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Feedback banners */}
           <AnimatePresence>
             {errorMessage && (
               <motion.div
                 initial={{ opacity: 0, y: -6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0 }}
-                className="p-3.5 rounded-xl bg-signal/10 border border-signal/30 text-signal text-xs flex items-start gap-2.5"
+                className="p-3.5 rounded-xl bg-[var(--signal-light)] border border-signal/30 text-signal-deep text-xs flex items-start gap-2.5"
+                role="alert"
               >
-                <AlertCircle size={15} className="flex-shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <p className="font-semibold">{errorMessage}</p>
-                  <p className="text-ink-soft">
-                    Tip: If you haven't registered this email in Supabase yet, use{' '}
-                    <Link to={ROUTES.register} className="text-verdigris underline font-semibold">
-                      New Patient Registration
-                    </Link>{' '}
-                    or try the Instant Demo Account below.
-                  </p>
-                </div>
+                <AlertCircle size={15} className="flex-shrink-0 mt-0.5 text-signal" />
+                <p className="font-medium leading-relaxed">{errorMessage}</p>
+              </motion.div>
+            )}
+            {infoMessage && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="p-3.5 rounded-xl bg-mint/60 border border-sage text-verdigris-deep text-xs flex items-start gap-2.5"
+              >
+                <CheckCircle2 size={15} className="flex-shrink-0 mt-0.5" />
+                <p className="font-medium leading-relaxed">{infoMessage}</p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Standard Form */}
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <div>
+          {/* Form Body */}
+          {mode === 'password' ? (
+            <form onSubmit={handlePasswordLogin} className="space-y-4">
               <Input
-                label="Supabase Email / Registered ID"
+                label="Email Address"
                 type="email"
-                placeholder="e.g. patient@example.com"
-                {...register('email')}
+                autoComplete="email"
+                placeholder="name@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
               />
-              {errors.email && <p className="text-xs text-signal mt-1">{errors.email.message}</p>}
-            </div>
 
-            <div>
               <div className="relative">
                 <Input
                   label="Password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="Enter your security password"
-                  {...register('password')}
+                  autoComplete="current-password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  rightElement={
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-ink-soft hover:text-ink"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  }
                 />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-8 text-ink-soft hover:text-ink transition-colors"
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+              </div>
+
+              <div className="flex justify-end">
+                <Link
+                  to={ROUTES.forgotPassword}
+                  className="text-xs font-medium text-verdigris hover:underline"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                  Forgot password?
+                </Link>
               </div>
-              {errors.password && <p className="text-xs text-signal mt-1">{errors.password.message}</p>}
-            </div>
 
-            <Button
-              type="submit"
-              variant="primary"
-              className="w-full justify-center bg-verdigris text-white hover:bg-verdigris-deep font-semibold py-3 shadow-warm-sm"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Signing in via Supabase…' : 'Sign In to Patient Portal'}
-            </Button>
-          </form>
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isSubmitting}
+                className="w-full justify-center bg-verdigris text-white hover:bg-verdigris-deep"
+              >
+                {isSubmitting ? 'Signing in…' : 'Sign In'}
+              </Button>
+            </form>
+          ) : !otpSent ? (
+            <form onSubmit={handleSendOtp} className="space-y-4">
+              {mode === 'email_otp' ? (
+                <Input
+                  label="Email Address"
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                />
+              ) : (
+                <Input
+                  label="Indian Mobile Number (+91)"
+                  type="tel"
+                  placeholder="9876543210"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  hint="Enter 10-digit mobile number"
+                  required
+                />
+              )}
 
-          {/* Quick Demo Login Option */}
-          <div className="pt-2">
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-sage-light"></div>
-              <span className="flex-shrink mx-3 text-[11px] font-mono uppercase text-ink-soft/70">Or One-Click Test</span>
-              <div className="flex-grow border-t border-sage-light"></div>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleDemoLogin}
-              className="w-full flex items-center justify-between p-3 rounded-xl border border-sage/80 bg-paper hover:bg-bone transition-all text-xs text-ink group"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-7 h-7 rounded-full bg-saffron/20 text-ink flex items-center justify-center font-bold text-xs">
-                  RM
-                </div>
-                <div className="text-left">
-                  <span className="font-semibold block text-ink">Explore with Rahul Mehta's Record</span>
-                  <span className="text-[10px] text-ink-soft font-mono">UHID: RH26-00192 · Active Prescriptions & Lab Results</span>
-                </div>
-              </div>
-              <span className="text-verdigris font-semibold group-hover:translate-x-1 transition-transform">Enter →</span>
-            </button>
-          </div>
-
-          <div className="text-center pt-2">
-            <p className="text-xs text-ink-soft">
-              Are you a hospital doctor or staff?{' '}
-              <Link to="/doctor/dashboard" className="text-verdigris font-semibold hover:underline">
-                Doctor Portal
-              </Link>{' '}
-              ·{' '}
-              <Link to="/reception/dashboard" className="text-verdigris font-semibold hover:underline">
-                Reception Desk
-              </Link>
-            </p>
-          </div>
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isSubmitting}
+                className="w-full justify-center bg-verdigris text-white hover:bg-verdigris-deep"
+              >
+                {isSubmitting ? 'Sending Code…' : 'Send 6-Digit OTP'}
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-4">
+              <Input
+                label="Enter 6-Digit OTP"
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                placeholder="123456"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                required
+              />
+              <Button
+                type="submit"
+                variant="primary"
+                size="lg"
+                isLoading={isSubmitting}
+                className="w-full justify-center bg-verdigris text-white hover:bg-verdigris-deep"
+              >
+                {isSubmitting ? 'Verifying…' : 'Verify & Sign In'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => setOtpSent(false)}
+                className="w-full text-center text-xs text-ink-soft hover:text-verdigris"
+              >
+                Change {mode === 'email_otp' ? 'email' : 'mobile number'}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>

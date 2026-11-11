@@ -116,7 +116,7 @@ export class BookingService {
         isAvailable: !bookedSlots.has(slot),
       }));
     } catch {
-      // In local demo without running emulator, mark default slots available
+      // Fallback to default baseline schedule when slot service is unavailable
       return allDaySlots.map(slot => ({
         slot,
         isAvailable: true,

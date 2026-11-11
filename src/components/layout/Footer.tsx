@@ -31,33 +31,33 @@ const FOOTER_LINKS = {
     { label: 'Visitor Info',       href: ROUTES.visitorInfo },
     { label: 'Careers',            href: ROUTES.careers },
   ],
-  'Legal': [
-    { label: 'Privacy Policy',     href: ROUTES.legal('privacy') },
-    { label: 'Terms of Use',       href: ROUTES.legal('terms') },
-    { label: 'Disclaimer',         href: ROUTES.legal('disclaimer') },
-    { label: 'Patient Rights',     href: ROUTES.legal('patient-rights') },
-    { label: 'Grievance Redressal',href: ROUTES.legal('grievance') },
-    { label: 'Cookie Policy',      href: ROUTES.legal('cookies') },
+  'Legal & Policies': [
+    { label: 'Privacy Policy',         href: ROUTES.legal('privacy') },
+    { label: 'Refund & Cancellation',  href: ROUTES.legal('refund') },
+    { label: 'Terms of Use',           href: ROUTES.legal('terms') },
+    { label: 'Medical Disclaimer',     href: ROUTES.legal('disclaimer') },
+    { label: 'Patient Rights',         href: ROUTES.legal('patient-rights') },
+    { label: 'Grievance Redressal',    href: ROUTES.legal('grievance') },
   ],
 };
 
 const BRANCHES = [
   {
-    name:    'Relif Andheri (Main Flagship)',
-    address: 'Versova Road, Andheri West, Mumbai 400 053',
-    phone:   '+91 22 2630 8000',
+    name:    'Relif Care Flagship — Andheri West',
+    address: 'Plot 42, Versova Link Road, Andheri West, Mumbai 400053',
+    phone:   '+91 22 6900 1000',
     isMain:  true,
   },
   {
-    name:    'Relif Thane (Day-Care & Oncology)',
-    address: 'Majiwada Junction, Thane West 400 601',
-    phone:   '+91 22 2540 9000',
+    name:    'Relif Care Specialty — Thane West',
+    address: 'Majiwada Junction, Eastern Express Hwy, Thane West 400601',
+    phone:   '+91 22 6900 2000',
     isMain:  false,
   },
   {
-    name:    'Relif Pune (Orthopedics & Rehab)',
-    address: 'Baner Road, Pune 411 045',
-    phone:   '+91 20 2720 5000',
+    name:    'Relif Care Multispecialty — Baner, Pune',
+    address: 'Survey 118, Baner High Street, Pune 411045',
+    phone:   '+91 20 6900 3000',
     isMain:  false,
   },
 ];
@@ -101,7 +101,7 @@ export function Footer() {
         <div className="border-t mb-16 pt-12" style={{ borderColor: 'var(--verdigris)' }}>
           <h3 className="font-mono text-xs font-medium tracking-widest uppercase mb-6"
               style={{ color: 'var(--sage)' }}>
-            Our Branches — Demo Data
+            Our Hospital Centres · Mumbai · Thane · Pune
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {BRANCHES.map(branch => (
@@ -126,7 +126,7 @@ export function Footer() {
                   style={{ color: 'rgba(207,230,219,0.75)' }}
                 >
                   <Phone size={13} />
-                  <span>{branch.phone} [Demo]</span>
+                  <span>{branch.phone}</span>
                 </a>
               </div>
             ))}
@@ -242,20 +242,27 @@ export function Footer() {
                 Accredited by NABH & NABL · 24/7 Emergency & Critical Care Helpline: 1066
               </p>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex flex-wrap items-center gap-4">
               <Link
                 to={ROUTES.legal('privacy')}
-                className="text-xs font-mono transition-colors"
+                className="text-xs font-mono transition-colors hover:underline"
                 style={{ color: 'var(--sage)' }}
               >
                 Privacy Policy
               </Link>
               <Link
-                to={ROUTES.designSystem}
-                className="text-xs font-mono transition-colors"
+                to={ROUTES.legal('refund')}
+                className="text-xs font-mono transition-colors hover:underline"
                 style={{ color: 'var(--sage)' }}
               >
-                Design System
+                Refund & Cancellation
+              </Link>
+              <Link
+                to={ROUTES.legal('terms')}
+                className="text-xs font-mono transition-colors hover:underline"
+                style={{ color: 'var(--sage)' }}
+              >
+                Terms of Use
               </Link>
             </div>
           </div>

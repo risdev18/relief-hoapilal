@@ -6,7 +6,7 @@ import {
   AlertCircle, FileText, CalendarDays
 } from 'lucide-react';
 import { cn } from '@/utils';
-import { Badge, DemoBadge, Button } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface ScheduleSlot {
@@ -190,7 +190,6 @@ export function DoctorDashboard() {
             <span className="w-2 h-2 rounded-full bg-mint animate-pulse-dot" />
             <span className="text-sm text-mint font-medium">On duty</span>
           </span>
-          <DemoBadge />
         </div>
       </motion.div>
 
@@ -229,7 +228,6 @@ export function DoctorDashboard() {
             <div className="flex items-center gap-2">
               <User size={18} className="text-verdigris" />
               <h2 className="font-display text-lg font-semibold text-ink">Patient Queue</h2>
-              <DemoBadge />
             </div>
             <span className="font-mono text-xs text-ink-soft bg-bone px-2.5 py-1 rounded-pill">
               {patientsRemaining} remaining
@@ -325,7 +323,6 @@ export function DoctorDashboard() {
                 <TrendingUp size={16} className="text-verdigris" />
                 <h3 className="font-display text-sm font-semibold text-ink">My Stats Today</h3>
               </div>
-              <DemoBadge />
             </div>
             <div className="space-y-3">
               {[

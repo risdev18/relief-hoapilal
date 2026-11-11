@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Badge, DemoBadge, StatCard, AvailabilityDot, TokenCard, QRCard, Stepper } from '@/components/ui';
+import { Button, Badge, StatCard, AvailabilityDot, TokenCard, QRCard, Stepper } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
 
 export function DesignSystemPage() {
@@ -29,7 +29,6 @@ export function DesignSystemPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Strict Zero-Blue enforcement. Every UI atom, color variable, and organic curve tells the story: <em>"From Strain to Relief"</em>.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -91,7 +90,6 @@ export function DesignSystemPage() {
             <Badge variant="saffron">Saffron Attention</Badge>
             <Badge variant="signal">Emergency Alert</Badge>
             <Badge variant="night">Night Mode</Badge>
-            <DemoBadge />
             <div className="flex items-center gap-3">
               <AvailabilityDot status="available" withLabel />
               <AvailabilityDot status="soon" withLabel />
@@ -120,7 +118,7 @@ export function DesignSystemPage() {
             />
             <QRCard
               appointmentId="REL-2026-000847"
-              patientName="Rahul Mehta"
+              patientName="Verified Patient"
               date="Nov 12, 2026"
               time="10:30 AM"
               doctor="Dr. Priya Sharma"

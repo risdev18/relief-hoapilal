@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Camera, Image as ImageIcon, Eye } from 'lucide-react';
-import { DemoBadge } from '@/components/ui';
+import { Image as ImageIcon } from 'lucide-react';
 
 export function GalleryPage() {
   const [filter, setFilter] = useState('All');
@@ -27,7 +26,6 @@ export function GalleryPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             A visual overview of our infection-controlled clinical spaces, patient wards, and state-of-the-art diagnostic machinery.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -55,7 +53,7 @@ export function GalleryPage() {
             <div key={idx} className="card bg-paper rounded-2xl overflow-hidden border border-sage-light shadow-warm-sm group">
               <div className="h-56 bg-gradient-to-br from-mint-light via-bone to-mint flex items-center justify-center relative">
                 <ImageIcon size={40} className="text-sage opacity-40 group-hover:scale-105 transition-transform" />
-                <span className="demo-badge absolute top-3 right-3">Archived Demo Image</span>
+                <span className="chip text-[11px] absolute top-3 right-3">{item.cat}</span>
               </div>
               <div className="p-5">
                 <span className="text-[11px] font-mono text-verdigris font-semibold">{item.cat}</span>

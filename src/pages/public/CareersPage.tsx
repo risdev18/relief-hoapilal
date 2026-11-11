@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Briefcase, MapPin, Clock, ArrowRight, CheckCircle2 } from 'lucide-react';
-import { Button, DemoBadge, Badge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 interface JobPosting {
   id: string;
@@ -43,7 +43,6 @@ export function CareersPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             We offer our clinical and non-clinical team members an environment anchored in safety protocols, academic growth, and humane patient engagement.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -85,7 +84,7 @@ export function CareersPage() {
             {applied ? (
               <div className="p-4 bg-mint border border-sage text-verdigris-deep rounded-xl text-sm font-medium flex items-center gap-2">
                 <CheckCircle2 size={18} />
-                <span>Demo application submitted to HR registry.</span>
+                <span>Application submitted to Relif Care HR desk.</span>
               </div>
             ) : (
               <form onSubmit={handleApply} className="space-y-3">
@@ -110,7 +109,7 @@ export function CareersPage() {
                     Cancel
                   </Button>
                   <Button variant="primary" className="flex-1" type="submit">
-                    Send Application (Demo)
+                    Send Application
                   </Button>
                 </div>
               </form>

@@ -4,7 +4,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, ArrowRight } from 'lucide-react';
-import { SectionHeader, Badge, DemoBadge } from '@/components/ui';
+import { SectionHeader, Badge } from '@/components/ui';
 import { ROUTES } from '@/config/constants';
 
 const ARTICLES = [
@@ -91,7 +91,6 @@ export function HealthLibraryTeaser() {
                   style={{ background: 'var(--bone)' }}
                 >
                   <div className="text-6xl opacity-30" aria-hidden="true">❤</div>
-                  <DemoBadge className="absolute top-4 right-4" />
                 </div>
                 <div className="p-6">
                   <div className="flex items-center gap-2 mb-3">

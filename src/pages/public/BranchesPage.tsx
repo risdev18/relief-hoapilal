@@ -1,6 +1,5 @@
 import React from 'react';
 import { MapPin, Phone, Clock, Navigation, CheckCircle2 } from 'lucide-react';
-import { Button, DemoBadge } from '@/components/ui';
 
 export function BranchesPage() {
   const BRANCHES = [
@@ -44,7 +43,6 @@ export function BranchesPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Consistently regulated clinical protocols and interconnected digital records across Mumbai, Thane, and Pune.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -69,7 +67,7 @@ export function BranchesPage() {
                   </p>
                   <p className="flex items-center gap-2">
                     <Phone size={15} className="text-signal flex-shrink-0" />
-                    <span className="font-mono text-signal font-semibold">ER: {b.emergency} (Demo)</span>
+                    <span className="font-mono text-signal font-semibold">ER: {b.emergency}</span>
                   </p>
                 </div>
 
@@ -83,15 +81,14 @@ export function BranchesPage() {
                 </div>
               </div>
 
-              <Button
-                variant="secondary"
-                size="sm"
-                leftIcon={<Navigation size={14} />}
-                className="w-full"
-                onClick={() => alert(`Directions calculated to ${b.name} (Demo)`)}
+              <a
+                href={`https://maps.google.com/?q=${encodeURIComponent(b.address)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-secondary btn-sm w-full inline-flex items-center justify-center gap-2"
               >
-                Get Directions
-              </Button>
+                <Navigation size={14} /> Get Directions
+              </a>
             </div>
           ))}
         </div>

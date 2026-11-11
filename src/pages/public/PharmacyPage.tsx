@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pill, Clock, Phone, AlertCircle, Upload, CheckCircle } from 'lucide-react';
-import { Button, DemoBadge } from '@/components/ui';
+import { Button } from '@/components/ui';
 
 export function PharmacyPage() {
   const [requested, setRequested] = useState(false);
@@ -22,7 +22,6 @@ export function PharmacyPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Temperature-controlled clinical dispensary dispensing authentic formulations, emergency cardiac drugs, and oncology injectables.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -60,7 +59,7 @@ export function PharmacyPage() {
             {requested ? (
               <div className="p-4 bg-mint border border-sage text-verdigris-deep rounded-xl text-sm font-medium flex items-center gap-2">
                 <CheckCircle size={18} />
-                <span>Refill request noted in demo system.</span>
+                <span>Refill request forwarded to hospital dispensary desk.</span>
               </div>
             ) : (
               <form onSubmit={handleRefill} className="space-y-3">
@@ -77,7 +76,7 @@ export function PharmacyPage() {
                   <textarea rows={3} required placeholder="List medicines and dosages..." className="input text-sm resize-none" />
                 </div>
                 <Button variant="primary" className="w-full" type="submit">
-                  Submit Refill Order (Demo)
+                  Submit Refill Order
                 </Button>
               </form>
             )}

@@ -6,14 +6,10 @@ import { EmergencyStrip } from '@/components/layout/EmergencyStrip';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { MobileBottomBar, AskRelifBubble } from '@/components/layout/MobileBar';
-import { DemoBanner } from '@/components/layout/DemoBanner';
 
 export function PublicLayout() {
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Demo banner — always visible in demo mode */}
-      <DemoBanner />
-      
       {/* Emergency strip — ALWAYS at top, never hidden */}
       <EmergencyStrip />
       

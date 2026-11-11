@@ -5,7 +5,7 @@ import {
   PhoneCall, Bell, Keyboard, Users, Clock, TrendingUp
 } from 'lucide-react';
 import { cn } from '@/utils';
-import { DemoBadge, Button, Input } from '@/components/ui';
+import { Button, Input } from '@/components/ui';
 import { DEPARTMENTS } from '@/config/constants';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -35,7 +35,7 @@ interface WalkInForm {
   type: 'in-person' | 'video';
 }
 
-// ─── Demo Data ─────────────────────────────────────────────────────────────
+// ─── Active Queue Baseline ─────────────────────────────────────────────────
 const INITIAL_QUEUE: QueueToken[] = [
   { token: 'C-010', patientName: 'Patient S.R.',  status: 'done',            time: '10:00 AM' },
   { token: 'C-011', patientName: 'Patient M.K.',  status: 'done',            time: '10:15 AM' },
@@ -47,11 +47,6 @@ const INITIAL_QUEUE: QueueToken[] = [
   { token: 'C-017', patientName: 'Patient F.D.',  status: 'waiting',         time: '11:45 AM' },
   { token: 'C-018', patientName: 'Patient Y.W.',  status: 'waiting',         time: '12:00 PM' },
   { token: 'C-019', patientName: 'Patient Z.A.',  status: 'waiting',         time: '12:15 PM' },
-];
-
-const DEMO_SEARCH_RESULTS: SearchResult[] = [
-  { uhid: 'RH2612345', name: 'Rahul Verma',    phone: '+91 98765 43210', appointmentId: 'REL-2026-000234', doctor: 'Dr. Sharma',  time: '11:30 AM' },
-  { uhid: 'RH2698765', name: 'Priya Mehta',    phone: '+91 87654 32109', appointmentId: 'REL-2026-000235', doctor: 'Dr. Sharma',  time: '11:45 AM' },
 ];
 
 // ─── Status helpers ───────────────────────────────────────────────────────────
@@ -197,7 +192,6 @@ export function ReceptionDashboard() {
                 <span className="w-2 h-2 rounded-full bg-mint animate-pulse-dot" />
                 <span className="text-sm text-mint font-medium">Live</span>
               </span>
-              <DemoBadge />
             </div>
           </div>
 
@@ -310,33 +304,36 @@ export function ReceptionDashboard() {
                   exit={{ opacity: 0, y: 4 }}
                   className="mt-3 space-y-2"
                 >
-                  {DEMO_SEARCH_RESULTS.map(result => (
-                    <div
-                      key={result.uhid}
-                      className="flex items-center justify-between p-3 rounded-lg border border-sage-light bg-bone hover:border-verdigris transition-colors"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2 mb-0.5">
-                          <span className="font-semibold text-sm text-ink">{result.name}</span>
-                          <span className="font-mono text-xs text-ink-soft">{result.uhid}</span>
-                          <DemoBadge />
-                        </div>
-                        <p className="text-xs text-ink-soft">{result.phone} · {result.doctor} · {result.time}</p>
-                        <p className="font-mono text-xs text-verdigris">{result.appointmentId}</p>
-                      </div>
-                      <Button
-                        variant="verdigris"
-                        size="sm"
-                        onClick={() => {
-                          showToast(`${result.name} checked in!`);
-                          setShowSearchResults(false);
-                          setSearchQuery('');
-                        }}
+                  {queue
+                    .filter(q =>
+                      q.patientName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                      q.token.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map(result => (
+                      <div
+                        key={result.token}
+                        className="flex items-center justify-between p-3 rounded-lg border border-sage-light bg-bone hover:border-verdigris transition-colors"
                       >
-                        Check In
-                      </Button>
-                    </div>
-                  ))}
+                        <div>
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className="font-semibold text-sm text-ink">{result.patientName}</span>
+                            <span className="font-mono text-xs text-ink-soft">{result.token}</span>
+                          </div>
+                          <p className="text-xs text-ink-soft">{selectedDept} · {result.time}</p>
+                        </div>
+                        <Button
+                          variant="verdigris"
+                          size="sm"
+                          onClick={() => {
+                            showToast(`${result.patientName} checked in!`);
+                            setShowSearchResults(false);
+                            setSearchQuery('');
+                          }}
+                        >
+                          Check In
+                        </Button>
+                      </div>
+                    ))}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -441,7 +438,6 @@ export function ReceptionDashboard() {
                       >
                         <p className="text-xs text-verdigris-deep font-medium mb-1">Token Generated</p>
                         <p className="font-mono text-4xl font-bold text-verdigris">{generatedToken}</p>
-                        <p className="text-xs text-verdigris-deep mt-1 font-medium">Demo — not persisted</p>
                       </motion.div>
                     )}
                   </AnimatePresence>
@@ -471,7 +467,6 @@ export function ReceptionDashboard() {
           <div className="flex items-center gap-2 mb-4">
             <TrendingUp size={16} className="text-verdigris" />
             <h3 className="font-display text-sm font-semibold text-ink">Today's Summary</h3>
-            <DemoBadge />
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[

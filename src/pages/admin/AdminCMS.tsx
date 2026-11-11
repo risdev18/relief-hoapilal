@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Plus, Edit2, Trash2, CheckCircle, HelpCircle, Star, FileText } from 'lucide-react';
-import { Button, Badge, DemoBadge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 export function AdminCMS() {
   const [section, setSection] = useState<'Banners' | 'Articles' | 'Testimonials' | 'FAQs'>('Banners');
@@ -9,10 +9,7 @@ export function AdminCMS() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold text-ink">Content Management System</h1>
-            <DemoBadge />
-          </div>
+          <h1 className="font-display text-3xl font-bold text-ink">Content Management System</h1>
           <p className="text-ink-soft text-sm">Review, moderate and publish editorial health resources and portal content.</p>
         </div>
         <Button variant="primary" leftIcon={<Plus size={16} />}>
@@ -103,9 +100,9 @@ export function AdminCMS() {
         <div className="space-y-4">
           <div className="p-4 bg-bone rounded-xl border border-sage-light flex justify-between items-center">
             <div>
-              <span className="demo-badge mb-1 inline-block">Moderation Queue</span>
+              <span className="chip text-xs mb-1 inline-block">Moderation Queue</span>
               <p className="font-semibold text-ink text-sm">"The nursing staff at Andheri ICU took relentless care of my father."</p>
-              <p className="text-xs text-ink-soft mt-1">— Anonymous Patient Family (Verified OPD ID #REL-2026-000412)</p>
+              <p className="text-xs text-ink-soft mt-1">— Verified Patient Family</p>
             </div>
             <div className="flex gap-2">
               <Button variant="secondary" size="sm">Reject</Button>

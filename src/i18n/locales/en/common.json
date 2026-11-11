@@ -18,37 +18,73 @@
     "bookAppointment": "Book Appointment",
     "login": "Sign In",
     "register": "Register",
-    "portal": "Portal"
+    "portal": "Portal",
+    "myAppointments": "My Appointments",
+    "reports": "Reports",
+    "profile": "Profile",
+    "adminConsole": "Admin Console",
+    "logout": "Logout"
   },
   "hero": {
     "concierge": "The Care Concierge",
-    "headline": "Tell us what's wrong.",
-    "subheadline": "We'll show you where to begin.",
-    "description": "Describe what you're experiencing and we'll guide you to the right department and doctor. No medical jargon. No dead ends.",
-    "disclaimer": "This guide helps you find the right department. It is not medical advice. In an emergency, call emergency.",
-    "liveTitle": "Live at Relif",
+    "headline": "Tell us what hurts.",
+    "subheadline": "We will show you where to begin.",
+    "description": "Describe your symptoms in plain language and we will guide you to the right department, specialist and transparent consultation fee.",
+    "disclaimer": "Clinical triage guidance only · Not a medical diagnosis",
+    "liveTitle": "Live Hospital Desk",
     "erStatus": "Open 24/7",
-    "nextSlot": "Next OPD slot",
-    "queueNow": "Cardiology — Token 14 serving now"
+    "nextSlot": "Next OPD Opening",
+    "queueNow": "Cardiology & General OPD Active",
+    "chips": {
+      "fever": "Fever",
+      "chestPain": "Chest pain",
+      "backPain": "Back pain",
+      "childHealth": "Child health"
+    }
   },
   "booking": {
-    "step1": "Which department?",
-    "step2": "Choose a doctor",
-    "step3": "Branch & consultation type",
-    "step4": "Pick a date & slot",
-    "step5": "Your details",
-    "step6": "Review & confirm",
-    "successTitle": "You're booked.",
-    "successSubtitle": "Your appointment has been confirmed (Demo)."
+    "title": "Book an Appointment",
+    "stepOf": "Step {{current}} of {{total}}",
+    "step1": "Department",
+    "step2": "Doctor",
+    "step3": "Branch",
+    "step4": "Slot",
+    "step5": "Details",
+    "step6": "Pay",
+    "step1Full": "Choose a department",
+    "step2Full": "Choose a doctor",
+    "step3Full": "Select branch & visit type",
+    "step4Full": "Pick date & slot",
+    "step5Full": "Patient details",
+    "step6Full": "Review & Payment",
+    "summaryTitle": "Visit & Fee Summary",
+    "consultationFee": "Consultation Fee",
+    "taxes": "GST (Healthcare Exempt)",
+    "total": "Total Payable",
+    "payOnline": "Pay online (UPI / Card / Netbanking)",
+    "payAtHospital": "Pay at hospital desk",
+    "refundSummary": "Free cancellation >= 24 hrs (100% refund) · 50% refund between 2–24 hrs · 0% within 2 hrs.",
+    "successTitle": "Your visit is confirmed.",
+    "successSubtitle": "Your booking reference, QR check-in pass and GST receipt are ready below.",
+    "downloadPdf": "Download PDF Receipt"
+  },
+  "portal": {
+    "emptyAppointments": "No appointments yet. Book your first visit.",
+    "upcoming": "Upcoming",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "reschedule": "Reschedule",
+    "cancel": "Cancel Visit",
+    "refundPending": "Refund Pending",
+    "refunded": "Refunded"
   },
   "common": {
-    "demo": "Demo",
     "book": "Book",
     "explore": "Explore",
     "viewAll": "View all",
     "download": "Download",
     "cancel": "Cancel",
-    "confirm": "Confirm"
+    "confirm": "Confirm",
+    "askRelif": "Ask Relif"
   }
 }
-

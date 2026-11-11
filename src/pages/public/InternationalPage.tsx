@@ -1,6 +1,6 @@
 import React from 'react';
-import { Globe, Plane, FileCheck, Languages, Building, HeartHandshake } from 'lucide-react';
-import { Button, DemoBadge } from '@/components/ui';
+import { Link } from 'react-router-dom';
+import { Plane, FileCheck, Languages, HeartHandshake } from 'lucide-react';
 
 export function InternationalPage() {
   return (
@@ -14,7 +14,6 @@ export function InternationalPage() {
           <p className="text-lg text-sage max-w-2xl leading-relaxed">
             Personalized clinical coordination, medical visa documentation assistance, language interpreters, and seamless airport reception.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -56,9 +55,9 @@ export function InternationalPage() {
           <p className="text-xs text-ink-soft leading-relaxed">
             Send your current medical reports, scans, and physician notes. Our senior medical board will evaluate your case and reply with a treatment plan within 24 hours.
           </p>
-          <Button variant="primary" onClick={() => alert('Demo action: International consultation initiated.')}>
-            Connect with International Coordinator (Demo)
-          </Button>
+          <Link to="/contact" className="btn btn-primary btn-md inline-flex items-center justify-center">
+            Connect with International Coordinator
+          </Link>
         </div>
       </div>
     </div>

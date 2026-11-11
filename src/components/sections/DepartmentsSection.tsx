@@ -1,245 +1,145 @@
-// Departments section — "The Index" — a typographic list, NOT a card grid
+// Departments section — 8 Clinical Departments with icons, live Supabase specialist counts, and instant booking links
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { motion, AnimatePresence, useMotionValue, useSpring } from 'framer-motion';
-import { Search, ChevronRight } from 'lucide-react';
-import { DEPARTMENTS, ROUTES } from '@/config/constants';
-import { SectionHeader, AvailabilityDot } from '@/components/ui';
-import { cn } from '@/utils';
+import { motion } from 'framer-motion';
+import {
+  Search, ChevronRight, Heart, Brain, Bone, Baby, HeartHandshake, Sparkles, Stethoscope, Eye
+} from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { ROUTES } from '@/config/constants';
+import { SectionHeader } from '@/components/ui';
+import { SupabaseService } from '@/services/supabaseService';
+import type { MasterDepartment, MasterDoctor } from '@/data/masterCatalog';
 
-// Demo data for each department
-const DEPT_DATA: Record<string, { doctorCount: number; nextSlot: string; availability: 'available' | 'soon' | 'away' }> = {
-  'cardiology':         { doctorCount: 8,  nextSlot: 'Today 4:30 PM',    availability: 'available' },
-  'neurology':          { doctorCount: 6,  nextSlot: 'Tomorrow 10:00 AM', availability: 'soon' },
-  'orthopedics':        { doctorCount: 7,  nextSlot: 'Today 3:00 PM',    availability: 'available' },
-  'oncology':           { doctorCount: 5,  nextSlot: 'Tomorrow 9:30 AM', availability: 'soon' },
-  'pediatrics':         { doctorCount: 9,  nextSlot: 'Today 5:00 PM',    availability: 'available' },
-  'gynecology':         { doctorCount: 6,  nextSlot: 'Today 4:00 PM',    availability: 'available' },
-  'general-medicine':   { doctorCount: 12, nextSlot: 'Today 2:30 PM',   availability: 'available' },
-  'general-surgery':    { doctorCount: 7,  nextSlot: 'Tomorrow 11:00 AM',availability: 'soon' },
-  'gastroenterology':   { doctorCount: 4,  nextSlot: 'Today 6:00 PM',    availability: 'available' },
-  'dermatology':        { doctorCount: 5,  nextSlot: 'Tomorrow 10:30 AM',availability: 'soon' },
-  'ent':                { doctorCount: 4,  nextSlot: 'Today 3:30 PM',    availability: 'available' },
-  'ophthalmology':      { doctorCount: 5,  nextSlot: 'Today 5:30 PM',    availability: 'available' },
-  'urology':            { doctorCount: 4,  nextSlot: 'Tomorrow 9:00 AM', availability: 'soon' },
-  'nephrology':         { doctorCount: 3,  nextSlot: 'Tomorrow 2:00 PM', availability: 'away' },
-  'pulmonology':        { doctorCount: 4,  nextSlot: 'Today 4:00 PM',    availability: 'available' },
-  'emergency-medicine': { doctorCount: 15, nextSlot: 'Walk-in 24/7',    availability: 'available' },
-  'radiology':          { doctorCount: 6,  nextSlot: 'Today 2:00 PM',    availability: 'available' },
-  'physiotherapy':      { doctorCount: 8,  nextSlot: 'Today 3:00 PM',    availability: 'available' },
-  'dentistry':          { doctorCount: 5,  nextSlot: 'Tomorrow 10:00 AM',availability: 'soon' },
-  'critical-care':      { doctorCount: 10, nextSlot: 'Walk-in 24/7',    availability: 'available' },
-};
-
-const DEPT_DESCRIPTIONS: Record<string, string> = {
-  'cardiology':         'Heart, blood vessels, and circulatory health',
-  'neurology':          'Brain, spine, and nervous system conditions',
-  'orthopedics':        'Bones, joints, muscles, and sports injuries',
-  'oncology':           'Cancer diagnosis and treatment',
-  'pediatrics':         'Child health from newborn to adolescence',
-  'gynecology':         'Women\'s reproductive and maternal health',
-  'general-medicine':   'Primary care and internal medicine',
-  'general-surgery':    'Surgical procedures for a wide range of conditions',
-  'gastroenterology':   'Digestive system and liver conditions',
-  'dermatology':        'Skin, hair, and nail conditions',
-  'ent':                'Ear, nose, throat, and head & neck conditions',
-  'ophthalmology':      'Eye health and vision care',
-  'urology':            'Urinary tract and male reproductive health',
-  'nephrology':         'Kidney disease and renal care',
-  'pulmonology':        'Lungs, breathing, and respiratory conditions',
-  'emergency-medicine': '24/7 emergency and trauma care',
-  'radiology':          'Imaging: X-ray, MRI, CT, ultrasound',
-  'physiotherapy':      'Rehabilitation, mobility, and pain management',
-  'dentistry':          'Oral health, dental care and surgery',
-  'critical-care':      'ICU and intensive care for critical patients',
+const ICON_MAP: Record<string, React.ElementType> = {
+  Heart,
+  Brain,
+  Bone,
+  Baby,
+  HeartHandshake,
+  Sparkles,
+  Stethoscope,
+  Eye,
 };
 
 export function DepartmentsSection() {
-  const [searchQuery, setSearchQuery]   = useState('');
-  const [hoveredDept, setHoveredDept]   = useState<string | null>(null);
-  const [cursorPos, setCursorPos]       = useState({ x: 0, y: 0 });
-  const sectionRef                      = useRef<HTMLDivElement>(null);
+  const { i18n } = useTranslation();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [departments, setDepartments] = useState<MasterDepartment[]>([]);
+  const [doctors, setDoctors] = useState<MasterDoctor[]>([]);
 
-  const springX = useSpring(0, { stiffness: 150, damping: 25 });
-  const springY = useSpring(0, { stiffness: 150, damping: 25 });
+  useEffect(() => {
+    void Promise.all([
+      SupabaseService.getDepartments(),
+      SupabaseService.getDoctors(),
+    ]).then(([depts, docs]) => {
+      setDepartments(depts);
+      setDoctors(docs);
+    });
+  }, []);
 
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!sectionRef.current) return;
-    const rect = sectionRef.current.getBoundingClientRect();
-    springX.set(e.clientX - rect.left);
-    springY.set(e.clientY - rect.top);
-    setCursorPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
+  const lang = (i18n.language || 'en').slice(0, 2);
 
-  const filtered = DEPARTMENTS.filter(d =>
-    d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (DEPT_DESCRIPTIONS[d.id] || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filtered = departments.filter(d => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      d.name.toLowerCase().includes(q) ||
+      d.description.toLowerCase().includes(q) ||
+      (d.symptomKeywords || []).some(k => k.toLowerCase().includes(q))
+    );
+  });
 
   return (
-    <section
-      ref={sectionRef}
-      className="section-padding bg-paper relative overflow-hidden"
-      onMouseMove={handleMouseMove}
-      aria-label="Departments"
-    >
+    <section className="section-padding bg-paper" aria-label="Departments">
       <div className="section-container">
-        <SectionHeader
-          eyebrow="All Departments"
-          title={<>The Index.</>}
-          subtitle="Twenty specialties. One place. Find the right department and the right doctor."
-        />
-
-        {/* Search */}
-        <div className="relative max-w-sm mb-10">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-soft" size={18} />
-          <input
-            type="search"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-            placeholder="Search departments…"
-            className="input pl-10 pr-4"
-            aria-label="Search departments"
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <SectionHeader
+            eyebrow="Clinical Specialties"
+            title="Eight Multispecialty Departments."
+            subtitle="Choose any department to inspect specialist qualifications, transparent INR fees, and today's schedule."
+            className="mb-0"
           />
+
+          <div className="relative w-full md:w-72 flex-shrink-0">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
+            <input
+              type="search"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              placeholder="Search department or symptom…"
+              className="input pl-10 text-sm"
+              aria-label="Filter clinical departments"
+            />
+          </div>
         </div>
 
-        {/* Typographic department list */}
-        <div className="border-t border-sage-light">
-          <AnimatePresence>
-            {filtered.map((dept, i) => {
-              const data  = DEPT_DATA[dept.id];
-              const isActive = hoveredDept === dept.id;
-              
-              return (
-                <motion.div
-                  key={dept.id}
-                  layout
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ delay: i * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                >
-                  <Link
-                    to={ROUTES.department(dept.slug)}
-                    className={cn(
-                      'group flex items-center justify-between py-4 md:py-5 px-2 border-b border-sage-light',
-                      'transition-all duration-300 rounded-lg -mx-2',
-                      {
-                        'bg-bone px-4 -mx-2 shadow-warm-sm': isActive,
-                      }
-                    )}
-                    onMouseEnter={() => setHoveredDept(dept.id)}
-                    onMouseLeave={() => setHoveredDept(null)}
-                  >
-                    {/* Left: index + name */}
-                    <div className="flex items-baseline gap-5 md:gap-8 flex-1 min-w-0">
-                      <span className="font-mono text-xs text-ink-soft w-6 flex-shrink-0">
-                        {(i + 1).toString().padStart(2, '0')}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <span
-                          className={cn(
-                            'font-display font-semibold text-xl md:text-2xl transition-colors duration-300',
-                            {
-                              'text-verdigris': isActive,
-                              'text-ink':       !isActive,
-                            }
-                          )}
-                        >
-                          {dept.name}
-                        </span>
-                        <p className="text-sm text-ink-soft mt-0.5 hidden md:block">
-                          {DEPT_DESCRIPTIONS[dept.id]}
-                        </p>
-                      </div>
-                    </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {filtered.map((dept, i) => {
+            const Icon = ICON_MAP[dept.icon] || Heart;
+            const deptDocs = doctors.filter(doc => doc.departmentSlug === dept.slug);
+            const minFee =
+              deptDocs.length > 0
+                ? Math.min(...deptDocs.map(d => d.feeInClinic))
+                : 700;
+            const localizedName =
+              lang === 'hi' ? dept.nameHi : lang === 'mr' ? dept.nameMr : dept.name;
 
-                    {/* Right: doctor count + availability + arrow */}
-                    <div className="flex items-center gap-4 md:gap-6 flex-shrink-0 ml-4">
-                      {data && (
-                        <>
-                          <span className="hidden sm:block text-sm text-ink-soft">
-                            {data.doctorCount} doctors
-                          </span>
-                          <div className="flex items-center gap-1.5">
-                            <AvailabilityDot status={data.availability} />
-                            <span className="text-sm font-medium text-verdigris hidden md:block">
-                              {data.nextSlot}
-                            </span>
-                          </div>
-                        </>
-                      )}
-                      <ChevronRight
-                        size={18}
-                        className={cn('transition-all duration-300', {
-                          'translate-x-1 text-verdigris': isActive,
-                          'text-sage':                    !isActive,
-                        })}
-                      />
-                    </div>
-                  </Link>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-          
-          {filtered.length === 0 && (
-            <div className="py-12 text-center">
-              <p className="text-ink-soft">No departments found for "{searchQuery}"</p>
-              <button
-                onClick={() => setSearchQuery('')}
-                className="mt-3 text-sm font-medium text-verdigris hover:underline"
+            return (
+              <motion.div
+                key={dept.slug}
+                initial={{ opacity: 0, y: 12 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.04, duration: 0.4 }}
+                className="card p-6 flex flex-col justify-between hover:border-verdigris transition-colors group"
               >
-                Clear search
-              </button>
-            </div>
-          )}
-        </div>
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-11 h-11 rounded-2xl bg-mint flex items-center justify-center text-verdigris-deep group-hover:bg-verdigris group-hover:text-white transition-colors">
+                      <Icon size={20} />
+                    </div>
+                    <span className="font-mono text-xs px-2.5 py-1 rounded-full bg-bone border border-sage-light text-ink-soft">
+                      {deptDocs.length} {deptDocs.length === 1 ? 'Doctor' : 'Doctors'}
+                    </span>
+                  </div>
 
-        {/* View all CTA */}
-        <div className="mt-8 flex justify-center">
-          <Link to={ROUTES.departments} className="btn btn-secondary btn-md">
-            Explore all departments
-          </Link>
+                  <h3 className="font-display text-xl font-bold text-ink mb-1">
+                    {localizedName}
+                  </h3>
+                  {lang !== 'en' && (
+                    <p className="font-mono text-[11px] text-verdigris mb-1.5">{dept.name}</p>
+                  )}
+                  <p className="text-sm text-ink-soft leading-relaxed mb-4">
+                    {dept.description}
+                  </p>
+                </div>
+
+                <div className="pt-4 border-t border-sage-light flex items-center justify-between text-xs">
+                  <span className="font-mono font-semibold text-verdigris-deep">
+                    From ₹{minFee}
+                  </span>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      to={ROUTES.department(dept.slug)}
+                      className="text-ink-soft hover:text-ink font-medium"
+                    >
+                      Explore
+                    </Link>
+                    <Link
+                      to={`${ROUTES.book}?department=${dept.slug}`}
+                      className="inline-flex items-center gap-0.5 font-semibold text-verdigris hover:text-verdigris-deep"
+                    >
+                      Book <ChevronRight size={13} />
+                    </Link>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
         </div>
       </div>
-
-      {/* Cursor-following arch preview — desktop only */}
-      <AnimatePresence>
-        {hoveredDept && (
-          <motion.div
-            className="absolute pointer-events-none hidden lg:block"
-            style={{
-              x: springX,
-              y: springY,
-              transform: 'translate(-50%, -120%)',
-              zIndex: 'var(--z-above)',
-            }}
-          >
-            <div className="bg-paper border border-sage-light rounded-2xl shadow-warm-xl p-5 w-56">
-              <div
-                className="w-full h-28 rounded-xl mb-3 overflow-hidden"
-                style={{ background: 'var(--bone)' }}
-              >
-                {/* Botanical illustration for each dept */}
-                <div className="flex items-center justify-center h-full">
-                  <svg viewBox="0 0 60 60" fill="none" className="w-16 opacity-30">
-                    <circle cx="30" cy="30" r="20" stroke="var(--verdigris)" strokeWidth="1.5" fill="none"/>
-                    <path d="M30 10 C30 10 40 20 40 30 C40 40 30 50 30 50 C30 50 20 40 20 30 C20 20 30 10 30 10" fill="var(--mint)" stroke="var(--verdigris)" strokeWidth="1"/>
-                  </svg>
-                </div>
-              </div>
-              <p className="font-semibold text-ink text-sm">{DEPARTMENTS.find(d => d.id === hoveredDept)?.name}</p>
-              <p className="text-xs text-ink-soft mt-1">{DEPT_DESCRIPTIONS[hoveredDept]}</p>
-              <p className="text-xs font-medium text-verdigris mt-2">
-                {DEPT_DATA[hoveredDept]?.doctorCount} specialists
-              </p>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </section>
   );
 }
-

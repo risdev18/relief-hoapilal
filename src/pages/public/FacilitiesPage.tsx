@@ -1,6 +1,5 @@
 import React from 'react';
-import { Microscope, Stethoscope, HeartPulse, Shield, Wind, Sparkles, Building2, Flame } from 'lucide-react';
-import { DemoBadge } from '@/components/ui';
+import { Microscope, Stethoscope, HeartPulse, Wind, Sparkles, Building2 } from 'lucide-react';
 
 export function FacilitiesPage() {
   const FACILITIES = [
@@ -47,7 +46,6 @@ export function FacilitiesPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Every square foot of our hospital is designed around infection control, patient dignity, and technological precision.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 

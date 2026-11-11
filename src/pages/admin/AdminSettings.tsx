@@ -1,23 +1,23 @@
 import React, { useState } from 'react';
 import { Shield, CreditCard, MessageSquare, MapPin, Key, Lock, Activity, CheckCircle2 } from 'lucide-react';
-import { Button, Badge, DemoBadge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 interface IntegrationModule {
   id: string;
   name: string;
   category: string;
   provider: string;
-  status: 'Live' | 'Sandbox' | 'Not configured' | 'Demo';
+  status: 'Live' | 'Sandbox' | 'Not configured';
   description: string;
 }
 
 const INTEGRATIONS: IntegrationModule[] = [
-  { id: 'pay-rzp', name: 'Payment Gateway', category: 'Financial', provider: 'Razorpay / PayU Adapter', status: 'Sandbox', description: 'Server-side order generation and HMAC signature webhook verification.' },
-  { id: 'sms-gw', name: 'SMS & OTP Dispatch', category: 'Communications', provider: 'Twilio / Fast2SMS', status: 'Demo', description: 'Routed to mock notification outbox in demo execution.' },
-  { id: 'wa-biz', name: 'WhatsApp Business API', category: 'Communications', provider: 'Meta Cloud API', status: 'Not configured', description: 'Real-time booking and report delivery notifications.' },
-  { id: 'maps-api', name: 'Geo Mapping & Branch Router', category: 'Navigation', provider: 'Custom Green-Styled Vector / GMaps', status: 'Demo', description: 'Branch geocoding and real-time transit calculation.' },
-  { id: 'webrtc-vc', name: 'HIPAA Encrypted Video', category: 'Teleconsultation', provider: 'Agora / Daily.co', status: 'Not configured', description: 'P2P secure video consultations for remote outpatient care.' },
-  { id: 'abdm-abha', name: 'Ayushman Bharat Digital Mission (ABDM)', category: 'Regulatory Health Exchange', provider: 'National Health Authority (NHA)', status: 'Not configured', description: 'ABHA creation, health record linking via M1/M2/M3 bridges.' },
+  { id: 'pay-rzp', name: 'Payment Gateway', category: 'Financial', provider: 'Razorpay Checkout + Edge Functions', status: 'Sandbox', description: 'Server-side order generation and HMAC-SHA256 signature verification.' },
+  { id: 'sms-gw', name: 'Email & SMS Dispatch', category: 'Communications', provider: 'Resend / Twilio / MSG91', status: 'Live', description: 'Dispatches booking confirmations, receipts, and cancellation notices via Supabase Edge Functions.' },
+  { id: 'wa-biz', name: 'WhatsApp Business API', category: 'Communications', provider: 'Meta Cloud / Webhook', status: 'Sandbox', description: 'Instant appointment alerts and reschedule confirmations.' },
+  { id: 'maps-api', name: 'Geo Mapping & Branch Router', category: 'Navigation', provider: 'OpenStreetMap & Google Maps Directions', status: 'Live', description: 'Live branch coordinates, OPD hours, and one-tap navigation links.' },
+  { id: 'webrtc-vc', name: 'Encrypted Teleconsultation', category: 'Teleconsultation', provider: 'Jitsi / Daily Adapter', status: 'Not configured', description: 'Remote video outpatient consultations.' },
+  { id: 'abdm-abha', name: 'Ayushman Bharat Digital Mission (ABDM)', category: 'Regulatory Health Exchange', provider: 'National Health Authority (NHA)', status: 'Not configured', description: 'ABHA health ID and clinical record federation.' },
 ];
 
 export function AdminSettings() {
@@ -27,7 +27,6 @@ export function AdminSettings() {
     switch (status) {
       case 'Live': return 'default';
       case 'Sandbox': return 'saffron';
-      case 'Demo': return 'default';
       default: return 'night';
     }
   };
@@ -36,11 +35,8 @@ export function AdminSettings() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold text-ink">System Configurations & Integrations</h1>
-            <DemoBadge />
-          </div>
-          <p className="text-ink-soft text-sm">Provider adapter layer, encryption policies, and compliance audit trail.</p>
+          <h1 className="font-display text-3xl font-bold text-ink">System Configurations &amp; Integrations</h1>
+          <p className="text-ink-soft text-sm">Provider adapter layer, Supabase RLS security policies, and compliance status.</p>
         </div>
       </div>
 
@@ -77,9 +73,7 @@ export function AdminSettings() {
               <p className="text-xs text-ink-soft leading-relaxed">{mod.description}</p>
               <div className="pt-3 border-t border-sage-light flex justify-between items-center text-xs">
                 <span className="text-ink-soft">Adapter: <strong className="text-ink font-medium">{mod.provider}</strong></span>
-                <Button variant="ghost" size="sm" onClick={() => alert(`Configured via adapter interface for ${mod.name} (Demo mode active).`)}>
-                  Configure
-                </Button>
+                <span className="text-xs font-mono text-verdigris">{mod.status}</span>
               </div>
             </div>
           ))}

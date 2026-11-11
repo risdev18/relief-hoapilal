@@ -1,31 +1,29 @@
 // Application configuration constants
-// All secrets are in environment variables — never hardcode keys here
+// All secrets are in environment variables — never hardcode secret keys here
 
 export const APP_CONFIG = {
-  name: 'Relif Hospital',
+  name: 'Relif Care Multispecialty',
+  shortName: 'Relif Care',
   tagline: 'Care that feels like relief.',
-  version: '1.0.0-demo',
-  isDemoMode: import.meta.env.VITE_DEMO_MODE !== 'false',
-  
-  // Emergency contact numbers
+  version: '2.0.0',
+
+  // Emergency & hospital contact numbers
   emergencyNumber: import.meta.env.VITE_EMERGENCY_NUMBER || '+91 22 6900 1066',
   ambulanceNumber: import.meta.env.VITE_AMBULANCE_NUMBER || '+91 22 6900 1088',
-  
+  supportEmail: 'care@relifcare.in',
+
   // Branches
-  defaultBranchId: 'branch-andheri',
-  
-  // Appointment ID format
+  defaultBranchSlug: 'andheri',
+
+  // Appointment & refund policy rules
   appointmentIdPrefix: 'REL',
-  
-  // Booking rules
-  maxAdvanceBookingDays: 30,
-  cancelCutoffHours: 2,
+  maxAdvanceBookingDays: 14,
+  fullRefundHours: 24,
+  halfRefundHours: 2,
   rescheduleCutoffHours: 4,
-  
+
   // Queue settings
   avgConsultationMinutes: 15,
-  
-  // Session
   sessionTimeoutMinutes: 60,
 } as const;
 
@@ -56,70 +54,50 @@ export const ROUTES = {
   about: '/about',
   contact: '/contact',
   careers: '/careers',
-  career: (id: string) => `/careers/${id}`,
   legal: (page: string) => `/legal/${page}`,
   faqs: '/faqs',
   designSystem: '/design-system',
-  demoGuide: '/demo-guide',
-  
+  book: '/book',
+
   // Auth
   login: '/auth/login',
   register: '/auth/register',
   forgotPassword: '/auth/forgot-password',
-  verifyOtp: '/auth/verify-otp',
-  
-  // Booking
-  book: '/book',
-  
+
   // Patient portal
   patientDashboard: '/patient/dashboard',
   patientAppointments: '/patient/appointments',
   patientRecords: '/patient/records',
   patientBilling: '/patient/billing',
   patientProfile: '/patient/profile',
-  patientFamily: '/patient/family',
-  
+
   // Doctor portal
   doctorDashboard: '/doctor/dashboard',
   doctorSchedule: '/doctor/schedule',
-  doctorPatients: '/doctor/patients',
-  
-  // Reception portal
+
+  // Reception
   receptionDashboard: '/reception/dashboard',
-  receptionRegister: '/reception/register',
-  
+
   // Admin
   adminDashboard: '/admin/dashboard',
   adminDoctors: '/admin/doctors',
   adminDepartments: '/admin/departments',
   adminAppointments: '/admin/appointments',
   adminPatients: '/admin/patients',
-  adminCms: '/admin/cms',
   adminAnalytics: '/admin/analytics',
   adminSettings: '/admin/settings',
+  adminCMS: '/admin/cms',
 } as const;
 
 export const DEPARTMENTS = [
-  { id: 'cardiology',         name: 'Cardiology',          slug: 'cardiology',         icon: 'heart' },
-  { id: 'neurology',          name: 'Neurology',           slug: 'neurology',          icon: 'brain' },
-  { id: 'orthopedics',        name: 'Orthopedics',         slug: 'orthopedics',        icon: 'bone' },
-  { id: 'oncology',           name: 'Oncology',            slug: 'oncology',           icon: 'ribbon' },
-  { id: 'pediatrics',         name: 'Pediatrics',          slug: 'pediatrics',         icon: 'baby' },
-  { id: 'gynecology',         name: 'Gynecology',          slug: 'gynecology',         icon: 'stethoscope' },
-  { id: 'general-medicine',   name: 'General Medicine',    slug: 'general-medicine',   icon: 'pill' },
-  { id: 'general-surgery',    name: 'General Surgery',     slug: 'general-surgery',    icon: 'scissors' },
-  { id: 'gastroenterology',   name: 'Gastroenterology',    slug: 'gastroenterology',   icon: 'activity' },
-  { id: 'dermatology',        name: 'Dermatology',         slug: 'dermatology',        icon: 'sun' },
-  { id: 'ent',                name: 'ENT',                 slug: 'ent',                icon: 'ear' },
-  { id: 'ophthalmology',      name: 'Ophthalmology',       slug: 'ophthalmology',      icon: 'eye' },
-  { id: 'urology',            name: 'Urology',             slug: 'urology',            icon: 'droplet' },
-  { id: 'nephrology',         name: 'Nephrology',          slug: 'nephrology',         icon: 'activity' },
-  { id: 'pulmonology',        name: 'Pulmonology',         slug: 'pulmonology',        icon: 'wind' },
-  { id: 'emergency-medicine', name: 'Emergency Medicine',  slug: 'emergency-medicine', icon: 'alert-circle' },
-  { id: 'radiology',          name: 'Radiology',           slug: 'radiology',          icon: 'scan' },
-  { id: 'physiotherapy',      name: 'Physiotherapy',       slug: 'physiotherapy',      icon: 'activity' },
-  { id: 'dentistry',          name: 'Dentistry',           slug: 'dentistry',          icon: 'smile' },
-  { id: 'critical-care',      name: 'Critical Care',       slug: 'critical-care',      icon: 'monitor' },
+  { id: 'cardiology',       name: 'Cardiology',              slug: 'cardiology',       icon: 'Heart' },
+  { id: 'neurology',        name: 'Neurology',               slug: 'neurology',        icon: 'Brain' },
+  { id: 'orthopedics',      name: 'Orthopedics',             slug: 'orthopedics',      icon: 'Bone' },
+  { id: 'pediatrics',       name: 'Pediatrics',              slug: 'pediatrics',       icon: 'Baby' },
+  { id: 'gynecology',       name: 'Gynecology & Obstetrics', slug: 'gynecology',       icon: 'HeartHandshake' },
+  { id: 'dermatology',      name: 'Dermatology',             slug: 'dermatology',      icon: 'Sparkles' },
+  { id: 'general-medicine', name: 'General Medicine',        slug: 'general-medicine', icon: 'Stethoscope' },
+  { id: 'ophthalmology',    name: 'Ophthalmology',           slug: 'ophthalmology',    icon: 'Eye' },
 ] as const;
 
 export const LANGUAGES = [
@@ -129,32 +107,25 @@ export const LANGUAGES = [
 ] as const;
 
 export const USER_ROLES = {
-  SUPER_ADMIN:  'super_admin',
   ADMIN:        'admin',
   DOCTOR:       'doctor',
-  RECEPTIONIST: 'receptionist',
-  LAB_STAFF:    'lab_staff',
-  HR_STAFF:     'hr_staff',
-  MARKETING:    'marketing_staff',
+  RECEPTIONIST: 'reception',
   PATIENT:      'patient',
 } as const;
 
 export const APPOINTMENT_STATUS = {
-  BOOKED:          'booked',
-  CONFIRMED:       'confirmed',
-  CHECKED_IN:      'checked_in',
-  IN_CONSULTATION: 'in_consultation',
-  COMPLETED:       'completed',
-  CANCELLED:       'cancelled',
-  NO_SHOW:         'no_show',
-  RESCHEDULED:     'rescheduled',
+  BOOKED:      'booked',
+  CONFIRMED:   'confirmed',
+  CHECKED_IN:  'checked_in',
+  COMPLETED:   'completed',
+  CANCELLED:   'cancelled',
+  RESCHEDULED: 'rescheduled',
 } as const;
 
 export const QUEUE_STATUS = {
-  WAITING:        'waiting',
-  CALLED:         'called',
-  IN_CONSULTATION:'in_consultation',
-  COMPLETED:      'completed',
-  NO_SHOW:        'no_show',
+  WAITING:         'waiting',
+  CALLED:          'called',
+  IN_CONSULTATION: 'in_consultation',
+  COMPLETED:       'completed',
+  NO_SHOW:         'no_show',
 } as const;
-

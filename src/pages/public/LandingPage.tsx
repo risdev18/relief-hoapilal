@@ -1,4 +1,4 @@
-// Landing Page — assembles all homepage sections
+// Landing Page — assembles all homepage sections cleanly with zero demo data
 
 import React from 'react';
 import { HeroSection }                  from '@/components/sections/HeroSection';
@@ -10,7 +10,9 @@ import { FacilitiesSection }            from '@/components/sections/FacilitiesSe
 import { DoctorsSection }               from '@/components/sections/DoctorsSection';
 import {
   PatientServicesSection,
+  CentresMapSection,
   TrustSection,
+  FAQSection,
   ClosingCTASection,
 } from '@/components/sections/CTASections';
 import { HealthLibraryTeaser }          from '@/components/sections/HealthLibraryTeaser';
@@ -18,39 +20,19 @@ import { HealthLibraryTeaser }          from '@/components/sections/HealthLibrar
 export function LandingPage() {
   return (
     <>
-      {/* Hero — The Care Concierge & Luxury Proportions */}
       <HeroSection />
-
-      {/* Hospital Key Clinical Statistics */}
       <StatsSection />
-
-      {/* How it works — 4 calm steps */}
       <HowItWorksSection />
-
-      {/* Departments — The Index */}
       <DepartmentsSection />
-
-      {/* Centres of Excellence — 6 Pinnacle Disciplines */}
       <CoESection />
-
-      {/* Hospital Facilities & Robotic Technology */}
       <FacilitiesSection />
-
-      {/* Doctors — Meet the people with INR OPD Fees */}
       <DoctorsSection />
-
-      {/* Patient services */}
       <PatientServicesSection />
-
-      {/* Trust, Patient Testimonials & Accreditations */}
+      <CentresMapSection />
       <TrustSection />
-
-      {/* Health Library teaser */}
       <HealthLibraryTeaser />
-
-      {/* Closing CTA */}
+      <FAQSection />
       <ClosingCTASection />
     </>
   );
 }
-

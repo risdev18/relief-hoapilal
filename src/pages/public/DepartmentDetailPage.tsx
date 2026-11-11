@@ -4,7 +4,7 @@ import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { ChevronRight, Calendar } from 'lucide-react';
 import { DEPARTMENTS, ROUTES } from '@/config/constants';
-import { Badge, DemoBadge, AvailabilityDot, SectionHeader } from '@/components/ui';
+import { Badge, AvailabilityDot, SectionHeader } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
 
 const DEPT_DATA: Record<string, {
@@ -141,8 +141,8 @@ export function DepartmentDetailPage() {
               </div>
             </div>
             <div className="relative">
-              <div className="bg-gradient-to-br from-mint-light to-bone rounded-3xl h-64 flex items-center justify-center">
-                <DemoBadge />
+              <div className="bg-gradient-to-br from-mint-light to-bone rounded-3xl h-64 flex items-center justify-center border border-sage-light">
+                <span className="font-mono text-xs uppercase tracking-widest text-verdigris">Clinical Specialty Unit</span>
               </div>
             </div>
           </div>

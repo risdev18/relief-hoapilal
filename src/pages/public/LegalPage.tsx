@@ -11,6 +11,7 @@ export function LegalPage() {
   const page = (rawPage || 'terms').toLowerCase();
 
   const isPrivacy = page.includes('privac');
+  const isRefund = page.includes('refund') || page.includes('cancel');
   const isTerms = page.includes('term');
   const isDisclaimer = page.includes('disclaim');
   const isRights = page.includes('right');
@@ -18,6 +19,8 @@ export function LegalPage() {
 
   const title = isPrivacy
     ? 'Privacy Policy & Patient Data Protection (DPDP)'
+    : isRefund
+    ? 'Refund & Cancellation Policy'
     : isDisclaimer
     ? 'Healthcare Disclaimer & Emergency Protocols'
     : isRights
@@ -28,6 +31,8 @@ export function LegalPage() {
 
   const subtitle = isPrivacy
     ? 'How Relif Care Multispecialty safeguards your electronic health records, diagnostic imaging, and personal health identifiers under the Digital Personal Data Protection (DPDP) Act.'
+    : isRefund
+    ? 'Clear, transparent cancellation windows, complimentary rescheduling terms, and refund timelines for OPD and Video consultations.'
     : isDisclaimer
     ? 'Important medical guidelines regarding digital triage guidance, online consultations, and emergency protocols.'
     : isRights
@@ -69,21 +74,18 @@ export function LegalPage() {
           {/* Quick Tabs to Other Policies */}
           <div className="flex flex-wrap gap-2 pb-6 border-b border-sage-light">
             {[
-              { label: 'Terms of Use', path: '/legal/terms' },
-              { label: 'Privacy Policy', path: '/legal/privacy' },
-              { label: 'Patient Rights', path: '/legal/patient-rights' },
-              { label: 'Medical Disclaimer', path: '/legal/disclaimer' },
-              { label: 'Grievance Redressal', path: '/legal/grievance' },
+              { label: 'Terms of Use', path: '/legal/terms', active: isTerms },
+              { label: 'Privacy Policy', path: '/legal/privacy', active: isPrivacy },
+              { label: 'Refund & Cancellation', path: '/legal/refund', active: isRefund },
+              { label: 'Patient Rights', path: '/legal/patient-rights', active: isRights },
+              { label: 'Medical Disclaimer', path: '/legal/disclaimer', active: isDisclaimer },
+              { label: 'Grievance Redressal', path: '/legal/grievance', active: isGrievance },
             ].map(tab => (
               <Link
                 key={tab.path}
                 to={tab.path}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  (isPrivacy && tab.path.includes('privacy')) ||
-                  (isTerms && tab.path.includes('terms')) ||
-                  (isRights && tab.path.includes('rights')) ||
-                  (isDisclaimer && tab.path.includes('disclaimer')) ||
-                  (isGrievance && tab.path.includes('grievance'))
+                  tab.active
                     ? 'bg-verdigris text-white font-semibold shadow-xs'
                     : 'bg-bone text-ink-soft hover:text-ink hover:bg-mint/40 border border-sage-light'
                 }`}
@@ -130,6 +132,46 @@ export function LegalPage() {
                 <h2 className="font-display text-2xl font-bold text-ink">5. Billing, Tariffs & Insurance (TPA)</h2>
                 <p>
                   Consultation tariffs and diagnostic investigation charges are transparently displayed in Indian National Rupees (INR). Final inpatient billing adheres to itemized billing norms certified under NABH standards. Cashless mediclaim facilities are subject to pre-authorization approval from the respective TPA / Insurance underwriter.
+                </p>
+              </section>
+            </div>
+          )}
+
+          {/* ── Refund & Cancellation Content ────────────────────────────── */}
+          {isRefund && (
+            <div className="space-y-8">
+              <section className="space-y-3">
+                <h2 className="font-display text-2xl font-bold text-ink">1. Cancellation & Refund Schedule</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                  <div className="p-4 rounded-2xl bg-mint/40 border border-sage">
+                    <p className="font-mono text-xs text-verdigris-deep font-bold uppercase">24+ Hours Prior</p>
+                    <p className="font-display text-2xl font-bold text-ink mt-1">100% Refund</p>
+                    <p className="text-xs text-ink-soft mt-1">Free cancellation with automatic refund initiation.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-[var(--saffron-light)] border border-[var(--clay)]">
+                    <p className="font-mono text-xs text-[var(--saffron-deep)] font-bold uppercase">2 – 24 Hours Prior</p>
+                    <p className="font-display text-2xl font-bold text-ink mt-1">50% Refund</p>
+                    <p className="text-xs text-ink-soft mt-1">Half consultation fee refunded to original source.</p>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-bone border border-sage-light">
+                    <p className="font-mono text-xs text-ink-soft font-bold uppercase">Under 2 Hours</p>
+                    <p className="font-display text-2xl font-bold text-ink mt-1">0% Refund</p>
+                    <p className="text-xs text-ink-soft mt-1">Slot held exclusively for your visit; non-refundable.</p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="space-y-3">
+                <h2 className="font-display text-2xl font-bold text-ink">2. Complimentary Rescheduling</h2>
+                <p>
+                  Patients may reschedule any active consultation to another available time slot with the same doctor directly from <strong>My Appointments</strong> at no extra charge.
+                </p>
+              </section>
+
+              <section className="space-y-3">
+                <h2 className="font-display text-2xl font-bold text-ink">3. Settlement Timeline</h2>
+                <p>
+                  Online Razorpay refunds are initiated immediately upon cancellation and reflect in the patient&apos;s UPI, bank account, or card statement within 5–7 business days.
                 </p>
               </section>
             </div>

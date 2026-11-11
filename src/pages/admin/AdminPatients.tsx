@@ -1,51 +1,87 @@
-import React, { useState } from 'react';
-import { Search, Eye, X, FileText, Calendar, ShieldCheck } from 'lucide-react';
-import { Button, Badge, DemoBadge } from '@/components/ui';
+// Admin Patients Registry — Derived Strictly from Real Authenticated Supabase Appointments (Zero Demo Data)
+import React, { useEffect, useMemo, useState } from 'react';
+import { Search, Eye, X, Calendar, ShieldCheck, Users } from 'lucide-react';
+import { SupabaseService, type SupabaseAppointmentRecord } from '@/services/supabaseService';
+import { Button } from '@/components/ui';
+import { formatDate } from '@/utils';
 
-interface PatientRecord {
-  uhid: string;
+interface PatientSummary {
+  patientId: string;
   name: string;
-  age: number;
-  gender: string;
+  email: string;
   phone: string;
-  bloodGroup: string;
   lastVisit: string;
-  registeredDate: string;
   appointmentsCount: number;
+  departments: string[];
+  recentBookings: SupabaseAppointmentRecord[];
 }
 
-const DEMO_PATIENTS: PatientRecord[] = [
-  { uhid: 'RH260192', name: 'Rahul Mehta', age: 38, gender: 'Male', phone: '+91 98201 12345', bloodGroup: 'B+', lastVisit: '2026-11-12', registeredDate: '2025-04-10', appointmentsCount: 5 },
-  { uhid: 'RH260481', name: 'Sunita Patil', age: 52, gender: 'Female', phone: '+91 98202 23456', bloodGroup: 'O+', lastVisit: '2026-11-12', registeredDate: '2024-11-15', appointmentsCount: 8 },
-  { uhid: 'RH260599', name: 'Amit Saxena', age: 29, gender: 'Male', phone: '+91 98203 34567', bloodGroup: 'A+', lastVisit: '2026-11-10', registeredDate: '2026-01-20', appointmentsCount: 2 },
-  { uhid: 'RH260312', name: 'Sneha Deshmukh', age: 34, gender: 'Female', phone: '+91 98204 45678', bloodGroup: 'AB+', lastVisit: '2026-10-28', registeredDate: '2025-08-04', appointmentsCount: 4 },
-  { uhid: 'RH260718', name: 'Farhan Khan', age: 45, gender: 'Male', phone: '+91 98205 56789', bloodGroup: 'O-', lastVisit: '2026-11-05', registeredDate: '2023-12-12', appointmentsCount: 12 },
-  { uhid: 'RH260844', name: 'Kavita Rao', age: 61, gender: 'Female', phone: '+91 98206 67890', bloodGroup: 'B-', lastVisit: '2026-09-14', registeredDate: '2024-03-30', appointmentsCount: 7 },
-  { uhid: 'RH260901', name: 'Vikram Seth', age: 41, gender: 'Male', phone: '+91 98207 78901', bloodGroup: 'A-', lastVisit: '2026-11-01', registeredDate: '2026-06-18', appointmentsCount: 3 },
-  { uhid: 'RH260124', name: 'Pooja Hegde', age: 26, gender: 'Female', phone: '+91 98208 89012', bloodGroup: 'O+', lastVisit: '2026-11-08', registeredDate: '2026-09-02', appointmentsCount: 1 },
-];
-
 export function AdminPatients() {
-  const [patients] = useState<PatientRecord[]>(DEMO_PATIENTS);
+  const [appointments, setAppointments] = useState<SupabaseAppointmentRecord[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [selectedPatient, setSelectedPatient] = useState<PatientRecord | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<PatientSummary | null>(null);
 
-  const filtered = patients.filter(p =>
-    p.name.toLowerCase().includes(search.toLowerCase()) ||
-    p.uhid.toLowerCase().includes(search.toLowerCase()) ||
-    p.phone.includes(search)
-  );
+  useEffect(() => {
+    let mounted = true;
+    SupabaseService.adminGetAllAppointments()
+      .then((rows) => {
+        if (mounted) setAppointments(rows);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const patients = useMemo<PatientSummary[]>(() => {
+    const map = new Map<string, PatientSummary>();
+    appointments.forEach((a) => {
+      const key = a.patient_id || a.patient_email || a.booking_ref;
+      const existing = map.get(key);
+      if (!existing) {
+        map.set(key, {
+          patientId: key,
+          name: a.patient_name,
+          email: a.patient_email,
+          phone: a.patient_phone,
+          lastVisit: a.appointment_date,
+          appointmentsCount: 1,
+          departments: [a.department_name],
+          recentBookings: [a],
+        });
+      } else {
+        existing.appointmentsCount += 1;
+        if (a.appointment_date > existing.lastVisit) existing.lastVisit = a.appointment_date;
+        if (a.department_name && !existing.departments.includes(a.department_name)) {
+          existing.departments.push(a.department_name);
+        }
+        existing.recentBookings.push(a);
+      }
+    });
+    return Array.from(map.values());
+  }, [appointments]);
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return patients.filter(
+      (p) =>
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.email.toLowerCase().includes(q) ||
+        p.phone.includes(search)
+    );
+  }, [patients, search]);
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold text-ink">Patient Registry</h1>
-            <DemoBadge />
-          </div>
-          <p className="text-ink-soft text-sm">Master Patient Index (MPI), UHID records, and authorized privacy access.</p>
-        </div>
+      <div>
+        <h1 className="font-display text-3xl font-bold text-ink">Patient Registry</h1>
+        <p className="text-ink-soft text-sm">
+          Authenticated patient index synchronized from live Supabase appointments and clinical visits.
+        </p>
       </div>
 
       {/* Search */}
@@ -54,7 +90,7 @@ export function AdminPatients() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
           <input
             type="text"
-            placeholder="Search by UHID, patient name, or phone number..."
+            placeholder="Search by patient name, email, or phone number…"
             value={search}
             onChange={e => setSearch(e.target.value)}
             className="input pl-9 py-2 text-sm"
@@ -68,119 +104,99 @@ export function AdminPatients() {
           <table className="data-table w-full">
             <thead>
               <tr>
-                <th className="py-3 px-4">UHID</th>
-                <th className="py-3 px-4">Patient Name</th>
-                <th className="py-3 px-4">Demographics</th>
-                <th className="py-3 px-4">Contact</th>
-                <th className="py-3 px-4">Last Visit</th>
-                <th className="py-3 px-4">Total Visited</th>
-                <th className="py-3 px-4 text-right">Profile</th>
+                <th className="py-3 px-4 text-left">Patient</th>
+                <th className="py-3 px-4 text-left">Contact</th>
+                <th className="py-3 px-4 text-left">Departments Visited</th>
+                <th className="py-3 px-4 text-left">Latest Date</th>
+                <th className="py-3 px-4 text-left">Bookings</th>
+                <th className="py-3 px-4 text-right">Details</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map(p => (
-                <tr key={p.uhid}>
-                  <td className="py-3 px-4">
-                    <span className="id-mono text-xs">{p.uhid}</span>
-                  </td>
-                  <td className="py-3 px-4 font-semibold text-ink text-sm">
-                    {p.name}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-ink-soft">
-                    {p.age} yrs · {p.gender} · <strong className="text-verdigris font-mono">{p.bloodGroup}</strong>
-                  </td>
-                  <td className="py-3 px-4 text-sm font-mono text-ink-soft">
-                    {p.phone}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-ink-soft">
-                    {p.lastVisit}
-                  </td>
-                  <td className="py-3 px-4 text-sm text-ink">
-                    {p.appointmentsCount} visits
-                  </td>
-                  <td className="py-3 px-4 text-right">
-                    <button
-                      onClick={() => setSelectedPatient(p)}
-                      className="p-1.5 rounded-lg text-ink-soft hover:bg-bone hover:text-ink transition-colors"
-                      title="View medical dossier"
-                    >
-                      <Eye size={16} />
-                    </button>
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="py-12 text-center text-sm text-ink-soft">
+                    Loading patient registry…
                   </td>
                 </tr>
-              ))}
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-14 text-center">
+                    <Users size={28} className="mx-auto text-sage mb-2" />
+                    <p className="text-sm font-medium text-ink">No patient visits recorded yet</p>
+                    <p className="text-xs text-ink-soft mt-1">
+                      Registered patients appear here once they book an appointment.
+                    </p>
+                  </td>
+                </tr>
+              ) : (
+                filtered.map(p => (
+                  <tr key={p.patientId}>
+                    <td className="py-3 px-4 font-semibold text-ink text-sm">{p.name}</td>
+                    <td className="py-3 px-4 text-xs font-mono text-ink-soft">
+                      <div>{p.phone || '—'}</div>
+                      <div>{p.email}</div>
+                    </td>
+                    <td className="py-3 px-4 text-xs text-ink-soft">{p.departments.join(', ')}</td>
+                    <td className="py-3 px-4 text-sm text-ink-soft">{formatDate(p.lastVisit)}</td>
+                    <td className="py-3 px-4 text-sm text-ink">{p.appointmentsCount}</td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => setSelectedPatient(p)}
+                        className="p-1.5 rounded-lg text-ink-soft hover:bg-bone hover:text-ink transition-colors"
+                        title="Inspect patient bookings"
+                      >
+                        <Eye size={16} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Patient Detail Drawer */}
+      {/* Inspection Modal */}
       {selectedPatient && (
-        <div className="fixed inset-0 z-modal flex justify-end bg-night/30 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-paper h-full shadow-warm-xl p-6 overflow-y-auto flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-4 border-b border-sage-light mb-6">
-                <div>
-                  <span className="id-mono text-xs">{selectedPatient.uhid}</span>
-                  <h2 className="font-display text-2xl font-bold text-ink mt-1">{selectedPatient.name}</h2>
-                </div>
-                <button onClick={() => setSelectedPatient(null)} className="p-1 text-ink-soft hover:text-ink">
-                  <X size={20} />
-                </button>
+        <div className="fixed inset-0 z-modal flex items-center justify-center bg-night/40 backdrop-blur-sm p-4">
+          <div className="bg-paper rounded-2xl max-w-lg w-full p-6 border border-sage-light shadow-warm-lg space-y-5">
+            <div className="flex justify-between items-start pb-4 border-b border-sage-light">
+              <div>
+                <h2 className="font-display text-2xl font-bold text-ink">{selectedPatient.name}</h2>
+                <p className="text-xs font-mono text-ink-soft mt-0.5">
+                  {selectedPatient.email} · {selectedPatient.phone}
+                </p>
               </div>
-
-              <div className="space-y-6">
-                <div className="p-4 bg-bone rounded-xl border border-sage-light space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-ink-soft">Age & Gender:</span>
-                    <span className="font-medium text-ink">{selectedPatient.age} yrs, {selectedPatient.gender}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-ink-soft">Blood Group:</span>
-                    <span className="font-mono font-bold text-verdigris">{selectedPatient.bloodGroup}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-ink-soft">Registered On:</span>
-                    <span className="text-ink">{selectedPatient.registeredDate}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-ink-soft">Consent Status:</span>
-                    <span className="inline-flex items-center gap-1 text-xs text-verdigris font-medium">
-                      <ShieldCheck size={14} /> Explicit Verified
-                    </span>
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="font-display font-semibold text-ink text-base mb-3">Clinical Dossier (Demo)</h3>
-                  <div className="space-y-2">
-                    <div className="p-3 bg-paper rounded-xl border border-sage-light flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText size={16} className="text-verdigris" />
-                        <span className="text-sm font-medium text-ink">Comprehensive Health Checkup</span>
-                      </div>
-                      <span className="text-xs text-ink-soft">Nov 2026</span>
-                    </div>
-                    <div className="p-3 bg-paper rounded-xl border border-sage-light flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FileText size={16} className="text-verdigris" />
-                        <span className="text-sm font-medium text-ink">Echocardiogram 2D Doppler</span>
-                      </div>
-                      <span className="text-xs text-ink-soft">Aug 2026</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-dashed border-sage p-4 text-xs text-ink-soft leading-relaxed">
-                  <p><strong>DPDP Act Compliance Mode:</strong> Record decryption requires tokenized clinician approval. Full electronic medical audit logged under session #DEMO-AUDIT-992.</p>
-                </div>
-              </div>
+              <button onClick={() => setSelectedPatient(null)} className="p-1 text-ink-soft hover:text-ink">
+                <X size={20} />
+              </button>
             </div>
 
-            <div className="pt-6 border-t border-sage-light flex gap-3">
-              <Button variant="primary" className="w-full" onClick={() => setSelectedPatient(null)}>
-                Close Dossier
-              </Button>
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              <p className="text-xs font-mono uppercase tracking-wider text-verdigris">Visit History</p>
+              {selectedPatient.recentBookings.map(b => (
+                <div key={b.id} className="p-3 bg-bone rounded-xl border border-sage-light flex items-center justify-between text-xs">
+                  <div>
+                    <p className="font-semibold text-ink">{b.doctor_name} · {b.department_name}</p>
+                    <p className="text-ink-soft flex items-center gap-1 mt-0.5">
+                      <Calendar size={12} /> {formatDate(b.appointment_date)} at {b.appointment_time}
+                    </p>
+                  </div>
+                  <span className="font-mono text-verdigris uppercase">{b.status}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-mint/40 rounded-xl border border-sage text-xs text-verdigris-deep flex items-start gap-2">
+              <ShieldCheck size={16} className="flex-shrink-0 mt-0.5" />
+              <p>
+                <strong>DPDP Act &amp; Row-Level Security:</strong> Patient records are protected by Supabase RLS policies scoped to clinical and admin authorization.
+              </p>
+            </div>
+
+            <div className="flex justify-end">
+              <Button variant="secondary" size="sm" onClick={() => setSelectedPatient(null)}>Close</Button>
             </div>
           </div>
         </div>
@@ -188,4 +204,3 @@ export function AdminPatients() {
     </div>
   );
 }
-

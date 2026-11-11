@@ -304,7 +304,7 @@ export interface Testimonial {
   doctorId?: string;
   date: Date;
   status: 'pending' | 'approved' | 'rejected';
-  isDemo: boolean;
+  isVerified?: boolean;
 }
 
 export interface BlogPost {
@@ -369,8 +369,7 @@ export interface Notification {
   channel: 'email' | 'sms' | 'whatsapp' | 'push';
   subject?: string;
   body: string;
-  status: 'pending' | 'simulated' | 'sent' | 'failed';
-  isSimulated: boolean; // always true in demo mode
+  status: 'pending' | 'sent' | 'failed';
   sentAt?: Date;
   createdAt: Date;
 }

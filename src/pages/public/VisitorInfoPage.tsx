@@ -1,6 +1,5 @@
 import React from 'react';
 import { Clock, Shield, Users, Coffee, Car, Map, Info } from 'lucide-react';
-import { DemoBadge } from '@/components/ui';
 
 export function VisitorInfoPage() {
   return (
@@ -14,7 +13,6 @@ export function VisitorInfoPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Essential guidelines for visiting relatives and attendants to ensure patient comfort, healing rest, and infection prevention.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 

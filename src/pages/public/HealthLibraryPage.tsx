@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Clock, CheckCircle2, Calculator, BookOpen } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { Button, DemoBadge, Badge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 interface ArticleItem {
   slug: string;
@@ -98,7 +98,6 @@ export function HealthLibraryPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Written by senior clinicians in plain language. Zero algorithmic sensationalism, zero medical jargon.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 

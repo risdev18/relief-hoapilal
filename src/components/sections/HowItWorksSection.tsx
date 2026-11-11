@@ -1,143 +1,189 @@
-// "A visit, in four calm steps" — scroll-pinned story section
+// "A visit, in six calm steps" — aligned step-by-step walkthrough matching the 6-step Booking Wizard
 
-import React, { useRef } from 'react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { RelifLine } from '@/components/ui/RelifLine';
-import { SectionHeader, QRCard, TokenCard, Stepper } from '@/components/ui';
+import { SectionHeader, QRCard, Stepper } from '@/components/ui';
+import { ROUTES } from '@/config/constants';
 
 const STEPS = [
   {
     number: '01',
-    title: 'Book',
-    description: 'Choose a department, pick a doctor, select a slot that works for you. Done in under two minutes.',
-    ui: <BookingUI />,
+    title: 'Department',
+    description: 'Choose the right specialty or let symptom guidance route you straight to our 8 clinical departments.',
+    ui: <DeptStepPreview />,
     lineVariant: 'hero' as const,
   },
   {
     number: '02',
-    title: 'Arrive',
-    description: "Scan your QR at reception or the kiosk. You're checked in. No forms, no queues at the desk.",
-    ui: <ArrivalUI />,
+    title: 'Doctor',
+    description: 'Browse every specialist in that department with qualifications, languages spoken, patient ratings and upfront fees.',
+    ui: <DoctorStepPreview />,
     lineVariant: 'section' as const,
   },
   {
     number: '03',
-    title: 'Meet your doctor',
-    description: "Your queue token updates in real time. When it's your turn, you'll know.",
-    ui: <QueueUI />,
+    title: 'Branch & Visit Type',
+    description: 'Pick Andheri West, Thane West, or Baner Pune — for an in-clinic visit or a secure video consultation.',
+    ui: <BranchStepPreview />,
     lineVariant: 'section' as const,
   },
   {
     number: '04',
-    title: 'Reports on your phone',
-    description: 'Lab reports, prescriptions, and discharge summaries — available digitally. No lost papers.',
-    ui: <ReportUI />,
+    title: 'Date & Time Slot',
+    description: 'Real-time calendar locks your chosen slot against double-booking as soon as you confirm.',
+    ui: <SlotStepPreview />,
+    lineVariant: 'section' as const,
+  },
+  {
+    number: '05',
+    title: 'Patient Details',
+    description: 'Your signed-in profile auto-fills name, phone, and UHID so you can review everything effortlessly.',
+    ui: <DetailsStepPreview />,
+    lineVariant: 'section' as const,
+  },
+  {
+    number: '06',
+    title: 'Transparent Pay & QR Pass',
+    description: 'Pay online via UPI/Cards or pay at the hospital desk, then download your instant PDF receipt & QR pass.',
+    ui: <PayStepPreview />,
     lineVariant: 'cta' as const,
   },
 ];
 
-function BookingUI() {
+function DeptStepPreview() {
   return (
-    <div className="card p-5 w-full max-w-xs">
+    <div className="card p-5 w-full max-w-xs space-y-3">
       <Stepper
         steps={[
-          { label: 'Department' },
-          { label: 'Doctor' },
-          { label: 'Date & Slot' },
-          { label: 'Confirm' },
+          { label: 'Dept' },
+          { label: 'Doc' },
+          { label: 'Branch' },
+          { label: 'Slot' },
+          { label: 'Info' },
+          { label: 'Pay' },
         ]}
-        currentStep={2}
+        currentStep={0}
       />
-      <div className="mt-5 space-y-3">
-        <div className="rounded-xl bg-bone p-3 border border-sage-light">
-          <p className="text-xs text-ink-soft mb-1">Selected doctor</p>
-          <p className="font-semibold text-sm text-ink">Dr. Priya Sharma</p>
-          <p className="text-xs text-ink-soft">Cardiology · Andheri Branch</p>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {['10:00', '10:30', '11:00', '11:30', '14:00', '14:30'].map((time, i) => (
-            <button
-              key={time}
-              className={`text-xs py-2 rounded-lg border transition-all ${
-                i === 1
-                  ? 'bg-saffron border-saffron text-ink font-semibold'
-                  : i === 3
-                  ? 'bg-sage-light border-sage-light text-ink-soft line-through'
-                  : 'bg-paper border-sage-light text-ink hover:border-verdigris'
-              }`}
-            >
-              {time}
-            </button>
-          ))}
-        </div>
-        <button className="btn btn-primary btn-sm w-full justify-center">
-          Confirm Slot
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function ArrivalUI() {
-  return (
-    <QRCard
-      appointmentId="REL-2026-000847"
-      patientName="Rahul M."
-      date="Tue, 12 Nov 2026"
-      time="10:30 AM"
-      doctor="Dr. Priya Sharma"
-      department="Cardiology"
-      qrValue="REL-2026-000847"
-      className="max-w-xs"
-    />
-  );
-}
-
-function QueueUI() {
-  return (
-    <TokenCard
-      token="C-014"
-      department="Cardiology"
-      doctor="Dr. Priya Sharma"
-      position={2}
-      estimatedWait={12}
-      status="called"
-      className="max-w-xs"
-    />
-  );
-}
-
-function ReportUI() {
-  return (
-    <div className="card p-5 w-full max-w-xs">
-      <div className="flex items-center justify-between mb-4">
-        <p className="font-semibold text-sm text-ink">Medical Records</p>
-        <span className="demo-badge">Demo</span>
-      </div>
-      <div className="space-y-2">
-        {[
-          { type: 'Lab Report', name: 'Complete Blood Count', date: 'Nov 12, 2026', ready: true },
-          { type: 'Prescription', name: 'Dr. Sharma — Cardiac', date: 'Nov 12, 2026', ready: true },
-          { type: 'Lab Report', name: 'Lipid Profile', date: 'Nov 12, 2026', ready: false },
-        ].map((record, i) => (
-          <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-bone border border-sage-light">
-            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                 style={{ background: record.ready ? 'var(--mint)' : 'var(--bone)' }}>
-              <span className="text-xs">{record.type === 'Lab Report' ? '🧪' : '📄'}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-semibold text-ink truncate">{record.name}</p>
-              <p className="text-xs text-ink-soft">{record.date}</p>
-            </div>
-            {record.ready ? (
-              <span className="text-xs font-medium text-verdigris flex-shrink-0">Download</span>
-            ) : (
-              <span className="text-xs text-ink-soft flex-shrink-0">Processing</span>
-            )}
+      <div className="grid grid-cols-2 gap-2 pt-2">
+        {['Cardiology', 'Neurology', 'Orthopedics', 'Pediatrics'].map((d, i) => (
+          <div
+            key={d}
+            className={`p-2.5 rounded-xl border text-xs font-semibold ${
+              i === 0 ? 'bg-mint border-verdigris text-verdigris-deep' : 'bg-bone border-sage-light text-ink-soft'
+            }`}
+          >
+            {d}
           </div>
         ))}
       </div>
     </div>
+  );
+}
+
+function DoctorStepPreview() {
+  return (
+    <div className="card p-5 w-full max-w-xs space-y-3">
+      <div className="rounded-xl bg-bone p-3 border border-sage-light flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm text-ink">Dr. Priya Sharma</p>
+          <p className="text-xs text-ink-soft">Cardiology · 15 yrs · 4.9★</p>
+        </div>
+        <span className="font-mono text-xs font-bold text-verdigris-deep bg-mint px-2.5 py-1 rounded-full">
+          ₹1,200
+        </span>
+      </div>
+      <div className="rounded-xl bg-paper p-3 border border-sage-light flex items-center justify-between">
+        <div>
+          <p className="font-semibold text-sm text-ink">Dr. Vikram Rao</p>
+          <p className="text-xs text-ink-soft">Cardiology · 14 yrs · 4.8★</p>
+        </div>
+        <span className="font-mono text-xs font-bold text-ink-soft bg-bone px-2.5 py-1 rounded-full">
+          ₹1,100
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function BranchStepPreview() {
+  return (
+    <div className="card p-5 w-full max-w-xs space-y-2.5">
+      <p className="text-xs font-mono uppercase tracking-wider text-verdigris">Select Centre</p>
+      <div className="p-3 rounded-xl border-2 border-verdigris bg-mint/30">
+        <p className="text-sm font-semibold text-ink">Andheri West Flagship</p>
+        <p className="text-xs text-ink-soft">In-Clinic Visit · ₹1,200</p>
+      </div>
+      <div className="p-3 rounded-xl border border-sage-light bg-bone">
+        <p className="text-sm font-medium text-ink">Video Tele-Consultation</p>
+        <p className="text-xs text-ink-soft">Secure HD Video · ₹1,000</p>
+      </div>
+    </div>
+  );
+}
+
+function SlotStepPreview() {
+  return (
+    <div className="card p-5 w-full max-w-xs space-y-3">
+      <p className="text-xs text-ink-soft">Live Slot Availability</p>
+      <div className="grid grid-cols-3 gap-2">
+        {['09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM'].map((time, i) => (
+          <div
+            key={time}
+            className={`text-[11px] py-2 text-center rounded-lg border ${
+              i === 1
+                ? 'bg-saffron border-saffron text-ink font-semibold'
+                : i === 3
+                ? 'bg-sage-light border-sage-light text-ink-soft line-through'
+                : 'bg-paper border-sage-light text-ink'
+            }`}
+          >
+            {time}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DetailsStepPreview() {
+  return (
+    <div className="card p-5 w-full max-w-xs space-y-2.5">
+      <p className="font-mono text-[10px] uppercase tracking-wider text-verdigris">Price Summary Before Commit</p>
+      <div className="space-y-1.5 text-xs">
+        <div className="flex justify-between">
+          <span className="text-ink-soft">Consultation Fee</span>
+          <span className="font-mono font-semibold text-ink">₹1,200</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-ink-soft">GST (Exempt)</span>
+          <span className="font-mono text-ink-soft">₹0</span>
+        </div>
+        <div className="flex justify-between pt-2 border-t border-sage-light font-semibold text-sm">
+          <span className="text-ink">Total Payable</span>
+          <span className="font-mono text-verdigris-deep">₹1,200</span>
+        </div>
+      </div>
+      <p className="text-[11px] text-ink-soft bg-bone p-2 rounded-lg">
+        Free cancellation &ge; 24 hrs · 50% refund between 2–24 hrs.
+      </p>
+    </div>
+  );
+}
+
+function PayStepPreview() {
+  return (
+    <QRCard
+      appointmentId="REL-2026-104829"
+      patientName="Outpatient Check-In"
+      date="Tomorrow"
+      time="10:00 AM"
+      doctor="Dr. Priya Sharma"
+      department="Cardiology"
+      qrValue="REL-2026-104829"
+      className="max-w-xs"
+    />
   );
 }
 
@@ -146,80 +192,57 @@ export function HowItWorksSection() {
     <section className="section-padding bg-bone" aria-label="How a visit works">
       <div className="section-container">
         <SectionHeader
-          eyebrow="A visit, in four calm steps"
-          title="No confusion. No running around."
-          subtitle="From booking to discharge — everything is designed to feel easy."
+          eyebrow="A visit, in six calm steps"
+          title="No confusion. No surprise fees."
+          subtitle="From selecting a department to downloading your GST receipt and QR check-in pass — six clear steps."
           align="center"
         />
 
-        <div className="space-y-24 md:space-y-32">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {STEPS.map((step, i) => (
             <motion.div
               key={step.number}
-              initial={{ opacity: 0, y: 24 }}
+              initial={{ opacity: 0, y: 18 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, margin: '-80px' }}
-              transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-              className={`grid grid-cols-1 lg:grid-cols-2 gap-12 items-center ${
-                i % 2 === 1 ? 'lg:direction-rtl' : ''
-              }`}
-              style={{ direction: i % 2 === 1 ? 'rtl' : 'ltr' }}
+              viewport={{ once: true, margin: '-60px' }}
+              transition={{ delay: i * 0.05, duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col justify-between p-6 rounded-2xl bg-paper border border-sage-light shadow-warm-xs"
             >
-              {/* Text side */}
-              <div style={{ direction: 'ltr' }}>
-                {/* Large serif step number */}
-                <div className="flex items-baseline gap-4 mb-4">
-                  <span
-                    className="font-display font-bold leading-none"
-                    style={{
-                      fontSize: 'clamp(5rem, 10vw, 9rem)',
-                      color: 'var(--sage-light)',
-                      lineHeight: 0.85,
-                    }}
-                    aria-hidden="true"
-                  >
+              <div>
+                <div className="flex items-center gap-3 mb-3">
+                  <span className="font-display text-3xl font-bold text-verdigris">
                     {step.number}
                   </span>
-                  {/* Relif Line at the step — relaxes as steps progress */}
                   <div className="flex-1">
                     <RelifLine
                       variant={step.lineVariant}
                       color="var(--verdigris)"
-                      strokeWidth={2}
+                      strokeWidth={1.8}
+                      animated={false}
                       className="w-full"
                     />
                   </div>
                 </div>
-                <h3 className="font-display text-4xl md:text-5xl font-semibold text-ink mb-4">
+                <h3 className="font-display text-2xl font-semibold text-ink mb-2">
                   {step.title}
                 </h3>
-                <p className="text-lg text-ink-soft leading-relaxed max-w-md">
+                <p className="text-sm text-ink-soft leading-relaxed mb-5">
                   {step.description}
                 </p>
               </div>
-
-              {/* UI Fragment side */}
-              <div
-                className="flex justify-center"
-                style={{ direction: 'ltr' }}
-              >
-                <div className="relative">
-                  {/* Soft background blob */}
-                  <div
-                    className="absolute inset-0 rounded-3xl -rotate-3 scale-105"
-                    style={{ background: 'var(--mint-light)' }}
-                    aria-hidden="true"
-                  />
-                  <div className="relative">
-                    {step.ui}
-                  </div>
-                </div>
+              <div className="flex justify-center pt-2">
+                {step.ui}
               </div>
             </motion.div>
           ))}
+        </div>
+
+        <div className="text-center mt-10">
+          <Link to={ROUTES.book} className="btn btn-primary btn-lg">
+            Start 6-Step Booking →
+          </Link>
         </div>
       </div>
     </section>
   );
 }
-

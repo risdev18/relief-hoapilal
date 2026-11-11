@@ -2,7 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building, Scan, ShieldCheck, Activity, Baby, Pill, ArrowRight } from 'lucide-react';
-import { SectionHeader, Badge, DemoBadge } from '@/components/ui';
+import { SectionHeader, Badge } from '@/components/ui';
 import { ROUTES } from '@/config/constants';
 
 const FACILITIES = [

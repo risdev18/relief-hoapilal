@@ -52,6 +52,12 @@ export function truncate(text: string, length: number): string {
   return text.slice(0, length).trim() + '…';
 }
 
+// Format Indian Rupees (INR)
+export function formatINR(amount: number | string | null | undefined): string {
+  const num = Number(amount || 0);
+  return `₹${Math.round(num).toLocaleString('en-IN')}`;
+}
+
 // Get initials
 export function getInitials(name: string): string {
   return name
@@ -76,11 +82,6 @@ export function readingTime(text: string): number {
   const wordsPerMinute = 200;
   const words = text.trim().split(/\s+/).length;
   return Math.ceil(words / wordsPerMinute);
-}
-
-// Demo data label check
-export function isDemoData(): boolean {
-  return import.meta.env.VITE_DEMO_MODE !== 'false';
 }
 
 // Wait helper

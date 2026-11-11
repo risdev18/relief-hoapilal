@@ -57,29 +57,29 @@ interface Message {
   content: string;
 }
 
-const DEMO_RESPONSES: Record<string, string> = {
-  default: "Hi! I'm Relif's hospital guide. I can help you find departments, doctors, or explain how to book an appointment. What can I help you with?\n\n⚠ I provide information only — not medical advice. For emergencies, please call our emergency line.",
-  book: "To book an appointment:\n1. Visit our **Book Appointment** page\n2. Select a department or doctor\n3. Choose your branch, date and slot\n4. Enter patient details and confirm\n\nYou'll receive an appointment ID and QR code for check-in.",
-  department: "We have 20 departments including Cardiology, Neurology, Orthopedics, Pediatrics, and more. Would you like to find a specific department or doctor?",
-  emergency: "🚨 For emergencies, please call our trauma line immediately: " + APP_CONFIG.emergencyNumber + "\n\nOur Emergency Medicine department is open 24/7.",
-  doctor: "You can browse all our doctors at /doctors, filter by department, specialty, language, or availability. Would you like help finding a specific type of doctor?",
+const GUIDE_RESPONSES: Record<string, string> = {
+  default: "Hi! I'm Relif Care's hospital guide. I can help you find departments, doctors, transparent fees, or walk you through booking a visit.\n\nNotice: I provide navigation & scheduling info only — not medical diagnosis. For emergencies, call our trauma helpline.",
+  book: "To book an appointment:\n1. Visit **Book Appointment**\n2. Choose a department & specialist\n3. Select your branch & in-clinic / video slot\n4. Review the fee breakdown & confirm online or pay at hospital\n\nYou'll receive a booking reference, QR pass and PDF receipt.",
+  department: "We have 8 clinical departments across Mumbai, Thane & Pune including Cardiology, Neurology, Orthopedics, Pediatrics, Gynecology, Dermatology, General Medicine & Ophthalmology.",
+  emergency: "For emergencies, please call our 24/7 Trauma Line immediately: " + APP_CONFIG.emergencyNumber + "\n\nOur Emergency Triage department is open 24/7 across all centres.",
+  doctor: "You can browse all specialists at /doctors, filter by branch, language, fee, or today's availability, and view complete doctor profiles before booking.",
 };
 
 export function AskRelifBubble() {
   const [isOpen, setIsOpen]       = useState(false);
   const [messages, setMessages]   = useState<Message[]>([
-    { id: '0', role: 'assistant', content: DEMO_RESPONSES.default }
+    { id: '0', role: 'assistant', content: GUIDE_RESPONSES.default }
   ]);
   const [input, setInput]         = useState('');
   const [isTyping, setIsTyping]   = useState(false);
 
   const getResponse = (query: string): string => {
     const q = query.toLowerCase();
-    if (q.includes('book') || q.includes('appointment')) return DEMO_RESPONSES.book;
-    if (q.includes('emergency') || q.includes('urgent')) return DEMO_RESPONSES.emergency;
-    if (q.includes('doctor') || q.includes('specialist')) return DEMO_RESPONSES.doctor;
-    if (q.includes('department') || q.includes('cardio') || q.includes('ortho')) return DEMO_RESPONSES.department;
-    return "I can help with finding departments, doctors, booking appointments, or general hospital information. What would you like to know?\n\n⚠ For medical questions, please consult a qualified doctor.";
+    if (q.includes('book') || q.includes('appointment')) return GUIDE_RESPONSES.book;
+    if (q.includes('emergency') || q.includes('urgent')) return GUIDE_RESPONSES.emergency;
+    if (q.includes('doctor') || q.includes('specialist')) return GUIDE_RESPONSES.doctor;
+    if (q.includes('department') || q.includes('cardio') || q.includes('ortho')) return GUIDE_RESPONSES.department;
+    return "I can help with finding departments, doctors, consultation fees, or booking appointments. What would you like to know?\n\nFor clinical evaluation, please consult one of our specialists.";
   };
 
   const handleSend = async () => {
@@ -224,35 +224,32 @@ export function AskRelifBubble() {
         )}
       </AnimatePresence>
 
-      {/* Floating bubble trigger */}
+      {/* Clearly Labeled Floating Assistant Trigger */}
       <motion.button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 w-14 h-14 rounded-full shadow-warm-lg flex items-center justify-center transition-transform"
+        className="fixed bottom-20 right-4 md:bottom-8 md:right-8 px-4 py-3 rounded-full shadow-warm-lg flex items-center gap-2 transition-transform font-semibold text-xs"
         style={{
           background: isOpen ? 'var(--ink)' : 'var(--verdigris)',
           color: 'white',
           zIndex: 'var(--z-assistant)',
           boxShadow: 'var(--shadow-verdigris)',
         }}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
+        whileHover={{ scale: 1.04 }}
+        whileTap={{ scale: 0.96 }}
         aria-label={isOpen ? 'Close Ask Relif assistant' : 'Open Ask Relif assistant'}
         aria-expanded={isOpen}
       >
-        <AnimatePresence mode="wait">
-          {isOpen ? (
-            <motion.div key="close" initial={{ rotate: -90 }} animate={{ rotate: 0 }} exit={{ rotate: 90 }}>
-              <X size={22} />
-            </motion.div>
-          ) : (
-            <motion.div key="open" initial={{ rotate: 90 }} animate={{ rotate: 0 }} exit={{ rotate: -90 }}>
-              <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
-                <path d="M4 20C10 12 16 8 20 8C24 8 30 12 36 20C30 28 24 32 20 32C16 32 10 28 4 20Z" stroke="white" strokeWidth="2" fill="none"/>
-                <circle cx="20" cy="20" r="4" fill="white"/>
-              </svg>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isOpen ? (
+          <>
+            <X size={16} />
+            <span>Close</span>
+          </>
+        ) : (
+          <>
+            <MessageCircle size={16} />
+            <span>Ask Relif</span>
+          </>
+        )}
       </motion.button>
     </>
   );

@@ -1,55 +1,118 @@
-import React, { useState } from 'react';
+// Doctor Profile Page — Full specialist dossier backed by Supabase + verified patient reviews
+
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Star, Video, MapPin, Clock, Award, Globe, CheckCircle2 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { ChevronRight, Star, Video, MapPin, Award, Globe, CheckCircle2, MessageSquarePlus } from 'lucide-react';
 import { ROUTES } from '@/config/constants';
-import { Badge, DemoBadge, AvailabilityDot, Button } from '@/components/ui';
+import { AvailabilityDot, Button, DoctorAvatar, EmptyState, Skeleton } from '@/components/ui';
 import { RelifLine } from '@/components/ui/RelifLine';
-import { DEMO_DOCTORS } from './DoctorsPage';
+import { SupabaseService, VerifiedReviewRecord, SupabaseAppointmentRecord } from '@/services/supabaseService';
+import { AuthService } from '@/services/authService';
+import type { MasterDoctor } from '@/data/masterCatalog';
 
 export function DoctorProfilePage() {
   const { slug } = useParams<{ slug: string }>();
-  const [selectedSlot, setSelectedSlot] = useState('10:00 AM');
 
-  // Match doctor by slug or fallback to Dr. Priya Sharma
-  const foundDoctor = DEMO_DOCTORS.find(d => d.slug === slug);
-  const doctor = {
-    name: foundDoctor?.name || 'Dr. Priya Sharma',
-    slug: foundDoctor?.slug || 'priya-sharma',
-    specialty: foundDoctor?.specialty || 'Senior Interventional Cardiologist',
-    department: foundDoctor?.department || 'Cardiology',
-    qualifications: foundDoctor?.qualifications ? foundDoctor.qualifications.split(', ') : ['MBBS', 'MD (Med)', 'DM (Cardiology)', 'FESC'],
-    experience: foundDoctor?.experience || 15,
-    languages: foundDoctor?.languages || ['English', 'Hindi', 'Marathi'],
-    opdTimings: foundDoctor?.opdTimings || '10:00 AM – 02:00 PM',
-    opdDays: foundDoctor?.opdDays || 'Mon – Sat',
-    consultationFee: foundDoctor?.consultationFee || 1200,
-    videoFee: foundDoctor?.videoFee || 1000,
-    availability: foundDoctor?.availability || 'available',
-    nextSlot: foundDoctor?.nextSlot || 'Today 4:30 PM',
-    rating: foundDoctor?.rating || 4.9,
-    reviews: foundDoctor?.reviews || 142,
-    branch: foundDoctor?.branch || 'Andheri Flagship',
-    registrationNumber: 'MCI/MMC-2011/04/0982 (Verified)',
-    bio: `${foundDoctor?.name || 'Dr. Priya Sharma'} is a senior faculty clinician with over ${foundDoctor?.experience || 15} years of advanced surgical and clinical experience. Trained at AIIMS and premier global medical centres, with special focus on evidence-based de-escalation of patient anxiety and meticulous clinical follow-up.`,
-    treatments: ['Coronary Angiography', 'Primary Angioplasty & Stenting', 'Echocardiography (2D Echo)', 'Preventive Cardiovascular Protocol', 'Hypertension Management'],
-    weeklySchedule: [
-      { day: 'Monday', slots: foundDoctor?.opdTimings || '10:00 AM – 02:00 PM', type: 'In-person OPD', branch: foundDoctor?.branch || 'Andheri Flagship' },
-      { day: 'Tuesday', slots: foundDoctor?.opdTimings || '10:00 AM – 02:00 PM', type: 'In-person OPD', branch: foundDoctor?.branch || 'Andheri Flagship' },
-      { day: 'Wednesday', slots: '03:00 PM – 06:00 PM', type: 'Video Tele-OPD', branch: 'Online / ABHA Portal' },
-      { day: 'Thursday', slots: foundDoctor?.opdTimings || '10:00 AM – 02:00 PM', type: 'In-person OPD', branch: foundDoctor?.branch || 'Andheri Flagship' },
-      { day: 'Friday', slots: foundDoctor?.opdTimings || '10:00 AM – 02:00 PM', type: 'In-person OPD', branch: foundDoctor?.branch || 'Andheri Flagship' },
-      { day: 'Saturday', slots: '10:00 AM – 01:00 PM', type: 'Emergency Rounds', branch: foundDoctor?.branch || 'Andheri Flagship' },
-      { day: 'Sunday', slots: 'Closed / Emergency on-call', type: '', branch: '' },
-    ],
-    feedbackSamples: [
-      { patient: 'R. Mehta, Mumbai', rating: 5, comment: 'Dr. Sharma explained everything calmly without rushed jargon. I felt thoroughly looked after.', date: 'Nov 2026' },
-      { patient: 'S. Kulkarni, Pune', rating: 5, comment: 'Exceptional clinical diagnostics and caring bedside manner.', date: 'Oct 2026' },
-      { patient: 'A. Patil, Thane', rating: 4, comment: 'Very reassuring consultation. The OPD queue was smooth.', date: 'Oct 2026' },
-    ],
+  const [doctor, setDoctor] = useState<MasterDoctor | null>(null);
+  const [reviews, setReviews] = useState<VerifiedReviewRecord[]>([]);
+  const [eligibleCompletedAppt, setEligibleCompletedAppt] = useState<SupabaseAppointmentRecord | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const [selectedVisitType, setSelectedVisitType] = useState<'in-person' | 'video'>('in-person');
+
+  // Verified review composer state
+  const [rating, setRating] = useState(5);
+  const [comment, setComment] = useState('');
+  const [reviewError, setReviewError] = useState<string | null>(null);
+  const [reviewSuccess, setReviewSuccess] = useState(false);
+  const [submittingReview, setSubmittingReview] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      setLoading(true);
+      const found = await SupabaseService.getDoctorBySlug(slug || '');
+      if (!active) return;
+      setDoctor(found);
+
+      if (found) {
+        const [revList, myAppts] = await Promise.all([
+          SupabaseService.getReviews(found.id),
+          AuthService.getActivePatient() ? SupabaseService.getPatientAppointments() : Promise.resolve([]),
+        ]);
+        if (!active) return;
+        setReviews(revList);
+        const completed = myAppts.find(a => a.doctor_id === found.id && a.status === 'completed');
+        setEligibleCompletedAppt(completed || null);
+      }
+      setLoading(false);
+    };
+    void load();
+    return () => { active = false; };
+  }, [slug]);
+
+  const handleReviewSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!doctor || !eligibleCompletedAppt || !comment.trim()) return;
+    setReviewError(null);
+    setSubmittingReview(true);
+    try {
+      const patient = AuthService.getActivePatient();
+      await SupabaseService.submitVerifiedReview({
+        doctorId: doctor.id,
+        appointmentId: eligibleCompletedAppt.id,
+        patientDisplayName: patient?.fullName || 'Verified Patient',
+        rating,
+        comment,
+      });
+      setReviewSuccess(true);
+      setComment('');
+      const refreshed = await SupabaseService.getReviews(doctor.id);
+      setReviews(refreshed);
+    } catch (err: any) {
+      setReviewError(err?.message || 'Unable to submit verified review.');
+    } finally {
+      setSubmittingReview(false);
+    }
   };
 
-  const AVAILABLE_SLOTS = ['09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM'];
+  if (loading) {
+    return (
+      <div className="bg-paper min-h-screen py-16">
+        <div className="section-container grid grid-cols-1 lg:grid-cols-3 gap-10">
+          <div className="lg:col-span-2 space-y-6">
+            <Skeleton className="h-52 w-full rounded-2xl" />
+            <Skeleton lines={6} />
+          </div>
+          <Skeleton className="h-80 w-full rounded-2xl" />
+        </div>
+      </div>
+    );
+  }
+
+  if (!doctor) {
+    return (
+      <div className="bg-paper min-h-screen py-20">
+        <EmptyState
+          title="Doctor profile not found"
+          description="The requested specialist profile could not be located."
+          action={
+            <Link to={ROUTES.doctors} className="btn btn-primary btn-md">
+              Browse All Doctors
+            </Link>
+          }
+        />
+      </div>
+    );
+  }
+
+  const activeFee = selectedVisitType === 'video' ? doctor.feeVideo : doctor.feeInClinic;
+  const weeklySchedule = [
+    { day: 'Monday – Friday', slots: doctor.opdTimings, type: 'In-Clinic OPD', branch: doctor.branchName },
+    { day: 'Monday – Saturday (Evening)', slots: '04:00 PM – 06:30 PM', type: 'Video Tele-OPD', branch: 'Online Portal' },
+    { day: 'Saturday Morning', slots: '09:30 AM – 01:00 PM', type: 'In-Clinic OPD', branch: doctor.branchName },
+    { day: 'Sunday', slots: 'Closed · Emergency On-Call 24/7', type: 'Emergency Desk', branch: doctor.branchName },
+  ];
 
   return (
     <div className="bg-paper min-h-screen">
@@ -67,175 +130,241 @@ export function DoctorProfilePage() {
       </div>
 
       <div className="section-container py-12">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-          {/* Left: Profile */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10 items-start">
+          {/* Main Clinical Profile */}
           <div className="lg:col-span-2 space-y-10">
-            {/* Doctor header */}
             <div className="flex flex-col sm:flex-row gap-6 items-start">
-              {/* Arch portrait */}
-              <div className="w-32 h-44 bg-gradient-to-b from-mint to-bone rounded-t-full flex items-end justify-center pb-3 flex-shrink-0 border border-sage-light">
-                <span className="font-display font-bold text-4xl text-verdigris opacity-60">
-                  {doctor.name.split(' ')[1]?.[0] || 'D'}
-                </span>
-              </div>
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  <DemoBadge />
+              <DoctorAvatar
+                name={doctor.name}
+                photoUrl={doctor.photoUrl}
+                alt={`${doctor.name} portrait`}
+                rounded="arch"
+                priority
+                className="w-40 flex-shrink-0 shadow-warm-md"
+              />
+              <div className="flex-1 space-y-2">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="font-mono text-xs uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-mint text-verdigris-deep font-semibold">
+                    {doctor.departmentName}
+                  </span>
                   <AvailabilityDot status={doctor.availability} withLabel />
                 </div>
-                <h1 className="font-display text-4xl font-bold text-ink mb-1">{doctor.name}</h1>
-                <p className="text-ink-soft text-sm font-mono mb-1">{doctor.qualifications.join(' · ')}</p>
-                <p className="text-verdigris font-semibold mb-3">{doctor.specialty}</p>
 
-                <div className="flex flex-wrap gap-3 text-sm text-ink-soft mb-3">
-                  <span>{doctor.experience} years clinical practice</span>
-                  <span>·</span>
-                  <span>{doctor.languages.join(', ')}</span>
-                  <span>·</span>
-                  <span className="font-medium text-ink">{doctor.branch}</span>
-                </div>
+                <h1 className="font-display text-3xl sm:text-4xl font-bold text-ink">{doctor.name}</h1>
+                <p className="text-sm font-mono text-ink-soft">{doctor.qualifications.join(' · ')}</p>
+                <p className="text-verdigris font-semibold text-base">{doctor.designation}</p>
 
-                <p className="text-xs text-verdigris font-mono font-medium bg-mint/50 py-1 px-2.5 rounded-pill w-fit border border-sage/40">
-                  ✓ Verified Council Reg: {doctor.registrationNumber}
-                </p>
-
-                <div className="flex items-center gap-1 mt-3">
-                  {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={14} className={i < Math.floor(doctor.rating) ? 'text-saffron fill-saffron' : 'text-sage'} />
-                  ))}
-                  <span className="text-sm font-medium text-ink ml-1">{doctor.rating}</span>
-                  <span className="text-sm text-ink-soft">({doctor.reviews} verified patient reviews)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Bio */}
-            <section className="bg-bone/60 p-6 rounded-2xl border border-sage-light space-y-3">
-              <h2 className="font-display text-2xl font-bold text-ink">Clinical Profile & Philosophy</h2>
-              <p className="text-sm text-ink-soft leading-relaxed">{doctor.bio}</p>
-            </section>
-
-            {/* Weekly schedule */}
-            <section>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-display text-2xl font-semibold text-ink">OPD Timings & Schedule</h2>
-                <span className="text-xs font-mono text-ink-soft">Current Week (Demo)</span>
-              </div>
-              <div className="border border-sage-light rounded-2xl overflow-hidden bg-paper shadow-warm-xs">
-                {doctor.weeklySchedule.map((day, i) => (
-                  <div
-                    key={day.day}
-                    className={`flex items-center justify-between p-4 text-sm ${
-                      i < doctor.weeklySchedule.length - 1 ? 'border-b border-sage-light' : ''
-                    } ${day.slots.includes('Closed') ? 'opacity-40 bg-bone/30' : ''}`}
-                  >
-                    <span className="font-semibold text-ink w-28">{day.day}</span>
-                    <span className="text-ink-soft flex-1">{day.slots}</span>
-                    {day.type && (
-                      <Badge variant="default" size="sm">
-                        {day.type} · {day.branch}
-                      </Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Key Procedures */}
-            <section>
-              <h2 className="font-display text-2xl font-semibold text-ink mb-4">Focus Procedures & Conditions</h2>
-              <div className="flex flex-wrap gap-2">
-                {doctor.treatments.map(t => (
-                  <span key={t} className="chip bg-paper text-ink border-sage-light font-medium text-xs">
-                    {t}
+                <div className="flex flex-wrap items-center gap-4 text-sm text-ink-soft pt-1">
+                  <span>{doctor.experienceYears} years experience</span>
+                  <span className="inline-flex items-center gap-1 font-semibold text-ink">
+                    <Star size={14} className="fill-saffron text-saffron" />
+                    {doctor.rating} ({doctor.reviewCount} reviews)
                   </span>
-                ))}
-              </div>
-            </section>
-
-            {/* Patient feedback */}
-            <section>
-              <h2 className="font-display text-2xl font-semibold text-ink mb-2">Patient Feedback</h2>
-              <p className="text-xs text-ink-soft mb-5">Demo — authentic experiences from verified hospital visits</p>
-              <div className="space-y-4">
-                {doctor.feedbackSamples.map((f, i) => (
-                  <div key={i} className="card-bone p-5 rounded-xl border border-sage-light space-y-2">
-                    <div className="flex items-center gap-2">
-                      {[...Array(f.rating)].map((_, j) => (
-                        <Star key={j} size={14} className="text-saffron fill-saffron" />
-                      ))}
-                      <span className="text-xs text-ink-soft ml-auto font-mono">{f.date}</span>
-                    </div>
-                    <p className="text-ink-soft italic text-sm">"{f.comment}"</p>
-                    <p className="text-xs font-medium text-ink">— {f.patient}</p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
-
-          {/* Right: Booking sidebar */}
-          <div>
-            <div className="card p-6 rounded-2xl border border-sage-light shadow-warm-md sticky top-24 space-y-5 bg-paper">
-              <div>
-                <h3 className="font-display text-xl font-bold text-ink mb-1">
-                  Book Consultation
-                </h3>
-                <p className="text-xs text-ink-soft">With {doctor.name}</p>
-                <RelifLine variant="section" color="var(--verdigris)" strokeWidth={1.5} className="my-3" />
-              </div>
-
-              {/* Consultation Fees Box */}
-              <div className="p-4 bg-bone rounded-xl border border-sage-light space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-medium text-ink-soft">In-Person OPD Fee</span>
-                  <span className="font-display text-lg font-bold text-ink">₹{doctor.consultationFee}</span>
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin size={14} className="text-verdigris" />
+                    {doctor.branchName}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <Globe size={14} className="text-verdigris" />
+                    {doctor.languages.join(', ')}
+                  </span>
                 </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-ink-soft">Video Tele-Consult</span>
-                  <span className="font-mono font-semibold text-verdigris">₹{doctor.videoFee}</span>
-                </div>
-              </div>
 
-              {/* Slot Picker */}
-              <div>
-                <p className="text-xs font-semibold text-ink uppercase tracking-wider mb-2.5">
-                  Available Slots Today ({doctor.nextSlot})
+                <p className="text-xs text-verdigris-deep font-mono bg-mint/50 py-1 px-3 rounded-pill w-fit border border-sage/40 mt-2">
+                  Verified Medical Council Reg: {doctor.registrationNumber}
                 </p>
-                <div className="grid grid-cols-2 gap-2">
-                  {AVAILABLE_SLOTS.map(slot => (
-                    <button
-                      key={slot}
-                      onClick={() => setSelectedSlot(slot)}
-                      className={`text-xs py-2 px-3 rounded-lg border transition-all ${
-                        selectedSlot === slot
-                          ? 'bg-saffron border-saffron text-ink font-bold shadow-warm-xs'
-                          : 'border-sage-light text-ink hover:border-verdigris hover:bg-mint/20'
-                      }`}
-                    >
-                      {slot}
-                    </button>
+              </div>
+            </div>
+
+            <RelifLine variant="section" color="var(--sage-light)" animated={false} />
+
+            {/* About */}
+            <section>
+              <h2 className="font-display text-2xl font-semibold text-ink mb-3">About</h2>
+              <p className="text-ink-soft leading-relaxed text-base">{doctor.bio}</p>
+            </section>
+
+            {/* Qualifications & Clinical Focus */}
+            <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="card p-5 bg-bone/70">
+                <h3 className="font-display text-lg font-semibold text-ink mb-3 flex items-center gap-2">
+                  <Award size={18} className="text-verdigris" /> Qualifications
+                </h3>
+                <ul className="space-y-2 text-sm text-ink-soft">
+                  {doctor.qualifications.map(q => (
+                    <li key={q} className="flex items-center gap-2">
+                      <CheckCircle2 size={14} className="text-verdigris flex-shrink-0" />
+                      <span>{q}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="card p-5 bg-bone/70">
+                <h3 className="font-display text-lg font-semibold text-ink mb-3">Clinical Specialities</h3>
+                <div className="flex flex-wrap gap-2">
+                  {doctor.specialities.map(sp => (
+                    <span key={sp} className="chip text-xs">{sp}</span>
                   ))}
                 </div>
               </div>
+            </section>
 
-              {/* Booking CTA Button */}
-              <Link
-                to={`/book?doctorId=${foundDoctor?.id || '1'}&doctorName=${encodeURIComponent(doctor.name)}&department=${encodeURIComponent(doctor.department)}&slot=${encodeURIComponent(selectedSlot)}`}
-                className="btn btn-primary btn-md w-full justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)] font-semibold"
-              >
-                Proceed to Book ({selectedSlot})
-              </Link>
+            {/* Weekly OPD Schedule */}
+            <section>
+              <h2 className="font-display text-2xl font-semibold text-ink mb-4">Weekly Consultation Schedule</h2>
+              <div className="card overflow-hidden">
+                <div className="divide-y divide-sage-light">
+                  {weeklySchedule.map(row => (
+                    <div key={row.day} className="p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-sm">
+                      <div>
+                        <p className="font-semibold text-ink">{row.day}</p>
+                        <p className="text-xs text-ink-soft">{row.type} · {row.branch}</p>
+                      </div>
+                      <span className="font-mono text-xs font-semibold text-verdigris-deep bg-mint/40 px-3 py-1 rounded-full w-fit">
+                        {row.slots}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
 
-              <div className="text-[11px] text-ink-soft space-y-1 text-center">
-                <p>✓ Instant SMS & WhatsApp Confirmation (Demo)</p>
-                <p>✓ Free reschedule or cancellation up to 2 hours prior</p>
+            {/* Verified Patient Reviews */}
+            <section className="space-y-5">
+              <div className="flex items-center justify-between">
+                <h2 className="font-display text-2xl font-semibold text-ink">
+                  Verified Patient Reviews ({reviews.length})
+                </h2>
+              </div>
+
+              {eligibleCompletedAppt && !reviewSuccess && (
+                <form onSubmit={handleReviewSubmit} className="card p-5 bg-bone space-y-4">
+                  <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                    <MessageSquarePlus size={16} className="text-verdigris" />
+                    <span>Share verified feedback from your completed visit ({eligibleCompletedAppt.appointment_date})</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-ink-soft">Rating:</span>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <button
+                        key={n}
+                        type="button"
+                        onClick={() => setRating(n)}
+                        className="p-1"
+                        aria-label={`Rate ${n} stars`}
+                      >
+                        <Star
+                          size={18}
+                          className={n <= rating ? 'fill-saffron text-saffron' : 'text-sage'}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={comment}
+                    onChange={e => setComment(e.target.value)}
+                    placeholder="Describe your consultation experience…"
+                    rows={3}
+                    required
+                    className="input text-sm"
+                  />
+                  {reviewError && <p className="text-xs text-signal">{reviewError}</p>}
+                  <Button type="submit" variant="primary" size="sm" isLoading={submittingReview}>
+                    Publish Verified Review
+                  </Button>
+                </form>
+              )}
+
+              {reviews.length === 0 ? (
+                <div className="card p-6 bg-bone/60 text-sm text-ink-soft">
+                  No written reviews submitted yet for {doctor.name}. Verified patients can post a review after their visit is completed.
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {reviews.map(r => (
+                    <div key={r.id} className="card p-5 bg-paper">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-sm text-ink">{r.patient_display_name}</span>
+                          <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-mint text-verdigris-deep font-semibold">
+                            Verified Visit
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          {Array.from({ length: r.rating }).map((_, idx) => (
+                            <Star key={idx} size={13} className="fill-saffron text-saffron" />
+                          ))}
+                        </div>
+                      </div>
+                      <p className="text-sm text-ink-soft leading-relaxed">{r.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          </div>
+
+          {/* Right Sticky Fee & Direct Booking Card */}
+          <aside className="lg:sticky lg:top-24 card p-6 bg-paper border-sage space-y-5 shadow-warm-md">
+            <div>
+              <span className="font-mono text-xs font-semibold uppercase tracking-widest text-verdigris">
+                Transparent Consultation Fee
+              </span>
+              <div className="flex items-baseline gap-2 mt-1">
+                <span className="font-display text-4xl font-bold text-ink">
+                  ₹{activeFee.toLocaleString('en-IN')}
+                </span>
+                <span className="text-xs text-ink-soft">per visit · GST exempt</span>
               </div>
             </div>
-          </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedVisitType('in-person')}
+                className={`p-3 rounded-xl border text-left transition-all ${
+                  selectedVisitType === 'in-person'
+                    ? 'border-verdigris bg-mint/40 font-semibold'
+                    : 'border-sage-light bg-bone text-ink-soft'
+                }`}
+              >
+                <p className="text-xs text-ink">In-Clinic</p>
+                <p className="font-mono text-sm font-bold text-verdigris-deep">₹{doctor.feeInClinic}</p>
+              </button>
+
+              {doctor.consultationTypes.includes('video') && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedVisitType('video')}
+                  className={`p-3 rounded-xl border text-left transition-all ${
+                    selectedVisitType === 'video'
+                      ? 'border-verdigris bg-mint/40 font-semibold'
+                      : 'border-sage-light bg-bone text-ink-soft'
+                  }`}
+                >
+                  <p className="text-xs text-ink flex items-center gap-1">
+                    <Video size={12} /> Video
+                  </p>
+                  <p className="font-mono text-sm font-bold text-verdigris-deep">₹{doctor.feeVideo}</p>
+                </button>
+              )}
+            </div>
+
+            <div className="text-xs text-ink-soft space-y-1.5 bg-bone p-3.5 rounded-xl border border-sage-light">
+              <p className="font-semibold text-ink">Pay online or at hospital desk</p>
+              <p>Free cancellation &ge; 24 hrs (100% refund) · 50% refund between 2–24 hrs.</p>
+            </div>
+
+            <Link
+              to={`${ROUTES.book}?department=${doctor.departmentSlug}&doctor=${doctor.slug}&type=${selectedVisitType}`}
+              className="btn btn-primary btn-lg w-full justify-center"
+            >
+              Book Consultation · ₹{activeFee}
+            </Link>
+          </aside>
         </div>
       </div>
     </div>
   );
 }
-

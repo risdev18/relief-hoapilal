@@ -1,392 +1,315 @@
-// Doctors Directory Page
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+// Doctors Directory Page — Complete Specialist Directory backed by Supabase
+// Consistent 4:5 studio portraits, skeleton loaders, fee transparency, and rich search + filters.
+
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Filter, Clock, Globe, Award, Calendar, Video, CheckCircle2 } from 'lucide-react';
-import { ROUTES, DEPARTMENTS } from '@/config/constants';
-import { Badge, DemoBadge, AvailabilityDot, Button } from '@/components/ui';
+import { Search, Star, Video, MapPin, Globe, IndianRupee } from 'lucide-react';
+import { ROUTES } from '@/config/constants';
+import { AvailabilityDot, DoctorAvatar, EmptyState, Skeleton } from '@/components/ui';
+import { SupabaseService } from '@/services/supabaseService';
+import type { MasterBranch, MasterDepartment, MasterDoctor } from '@/data/masterCatalog';
 import { cn } from '@/utils';
 
-export interface DoctorProfile {
-  id: string;
-  name: string;
-  slug: string;
-  specialty: string;
-  department: string;
-  qualifications: string;
-  experience: number;
-  languages: string[];
-  opdTimings: string;
-  opdDays: string;
-  consultationFee: number;
-  videoFee: number;
-  availability: 'available' | 'soon' | 'away';
-  nextSlot: string;
-  consultationTypes: ('in-person' | 'video')[];
-  rating: number;
-  reviews: number;
-  branch: string;
-}
-
-export const DEMO_DOCTORS: DoctorProfile[] = [
-  {
-    id: '1',
-    name: 'Dr. Priya Sharma',
-    slug: 'priya-sharma',
-    specialty: 'Senior Interventional Cardiologist',
-    department: 'Cardiology',
-    qualifications: 'MBBS, MD (Med), DM (Cardiology), FESC',
-    experience: 15,
-    languages: ['English', 'Hindi', 'Marathi'],
-    opdTimings: '10:00 AM – 02:00 PM',
-    opdDays: 'Mon – Sat',
-    consultationFee: 1200,
-    videoFee: 1000,
-    availability: 'available',
-    nextSlot: 'Today 4:30 PM',
-    consultationTypes: ['in-person', 'video'],
-    rating: 4.9,
-    reviews: 142,
-    branch: 'Andheri Flagship',
-  },
-  {
-    id: '2',
-    name: 'Dr. Rajesh Kulkarni',
-    slug: 'rajesh-kulkarni',
-    specialty: 'Chief Robotic Joint Replacement Surgeon',
-    department: 'Orthopedics',
-    qualifications: 'MBBS, MS (Ortho), MCh, Fellowship in Arthroplasty (UK)',
-    experience: 20,
-    languages: ['English', 'Marathi', 'Hindi'],
-    opdTimings: '11:00 AM – 03:30 PM',
-    opdDays: 'Mon, Wed, Fri',
-    consultationFee: 1500,
-    videoFee: 1200,
-    availability: 'available',
-    nextSlot: 'Today 3:00 PM',
-    consultationTypes: ['in-person'],
-    rating: 4.8,
-    reviews: 128,
-    branch: 'Andheri Flagship',
-  },
-  {
-    id: '3',
-    name: 'Dr. Ananya Joshi',
-    slug: 'ananya-joshi',
-    specialty: 'Senior Consultant Pediatrician & Neonatologist',
-    department: 'Pediatrics',
-    qualifications: 'MBBS, MD (Pediatrics), DNB, Fellowship in Neonatology',
-    experience: 12,
-    languages: ['English', 'Hindi', 'Marathi'],
-    opdTimings: '09:00 AM – 01:00 PM',
-    opdDays: 'Mon – Sat',
-    consultationFee: 900,
-    videoFee: 800,
-    availability: 'available',
-    nextSlot: 'Today 5:00 PM',
-    consultationTypes: ['in-person', 'video'],
-    rating: 4.9,
-    reviews: 215,
-    branch: 'Thane Center',
-  },
-  {
-    id: '4',
-    name: 'Dr. Meera Patel',
-    slug: 'meera-patel',
-    specialty: 'Consultant Dermatologist & Cosmetologist',
-    department: 'Dermatology',
-    qualifications: 'MBBS, MD (Dermatology, Venereology & Leprosy)',
-    experience: 10,
-    languages: ['English', 'Gujarati', 'Hindi'],
-    opdTimings: '02:00 PM – 06:00 PM',
-    opdDays: 'Tue, Thu, Sat',
-    consultationFee: 850,
-    videoFee: 800,
-    availability: 'soon',
-    nextSlot: 'Tomorrow 11:30 AM',
-    consultationTypes: ['in-person', 'video'],
-    rating: 4.7,
-    reviews: 94,
-    branch: 'Andheri Flagship',
-  },
-  {
-    id: '5',
-    name: 'Dr. Arun Nair',
-    slug: 'arun-nair',
-    specialty: 'Director & Senior Consultant Physician',
-    department: 'General Medicine',
-    qualifications: 'MBBS, MD (Internal Medicine), FACP',
-    experience: 18,
-    languages: ['English', 'Malayalam', 'Hindi'],
-    opdTimings: '09:00 AM – 02:00 PM',
-    opdDays: 'Mon – Sat',
-    consultationFee: 800,
-    videoFee: 700,
-    availability: 'available',
-    nextSlot: 'Today 2:30 PM',
-    consultationTypes: ['in-person', 'video'],
-    rating: 4.8,
-    reviews: 184,
-    branch: 'Pune Center',
-  },
-  {
-    id: '6',
-    name: 'Dr. Sunita Desai',
-    slug: 'sunita-desai',
-    specialty: 'Chief of Neurosciences & Stroke Specialist',
-    department: 'Neurology',
-    qualifications: 'MBBS, MD (Med), DM (Neurology), FINR',
-    experience: 16,
-    languages: ['English', 'Marathi', 'Hindi'],
-    opdTimings: '10:30 AM – 02:30 PM',
-    opdDays: 'Mon, Tue, Thu, Fri',
-    consultationFee: 1400,
-    videoFee: 1200,
-    availability: 'available',
-    nextSlot: 'Tomorrow 10:00 AM',
-    consultationTypes: ['in-person'],
-    rating: 4.9,
-    reviews: 112,
-    branch: 'Andheri Flagship',
-  },
-  {
-    id: '7',
-    name: 'Dr. Vikram Rao',
-    slug: 'vikram-rao',
-    specialty: 'Cardiac Electrophysiologist & Pacing',
-    department: 'Cardiology',
-    qualifications: 'MBBS, MD (Med), DM (Cardiology), Fellowship in Electrophysiology',
-    experience: 14,
-    languages: ['English', 'Telugu', 'Hindi'],
-    opdTimings: '01:00 PM – 05:00 PM',
-    opdDays: 'Mon – Fri',
-    consultationFee: 1200,
-    videoFee: 1000,
-    availability: 'soon',
-    nextSlot: 'Tomorrow 10:00 AM',
-    consultationTypes: ['in-person', 'video'],
-    rating: 4.8,
-    reviews: 67,
-    branch: 'Andheri Flagship',
-  },
-  {
-    id: '8',
-    name: 'Dr. Deepa Krishnan',
-    slug: 'deepa-krishnan',
-    specialty: 'Senior Obstetrician & Gynecological Surgeon',
-    department: 'Gynecology',
-    qualifications: 'MBBS, MS (Obstetrics & Gynecology), DNB, FICOG',
-    experience: 15,
-    languages: ['English', 'Tamil', 'Hindi', 'Marathi'],
-    opdTimings: '10:00 AM – 03:00 PM',
-    opdDays: 'Mon – Sat',
-    consultationFee: 1100,
-    videoFee: 950,
-    availability: 'available',
-    nextSlot: 'Today 4:00 PM',
-    consultationTypes: ['in-person', 'video'],
-    rating: 4.8,
-    reviews: 168,
-    branch: 'Andheri Flagship',
-  },
-];
-
 export function DoctorsPage() {
-  const [query, setQuery] = useState('');
-  const [deptFilter, setDeptFilter] = useState('');
-  const [langFilter, setLangFilter] = useState('');
-  const [availFilter, setAvailFilter] = useState('');
-  const [videoFilter, setVideoFilter] = useState(false);
+  const [searchParams] = useSearchParams();
+  const initialDept = searchParams.get('department') || '';
 
-  const filtered = DEMO_DOCTORS.filter(d => {
-    if (query && !d.name.toLowerCase().includes(query.toLowerCase()) &&
-        !d.specialty.toLowerCase().includes(query.toLowerCase()) &&
-        !d.qualifications.toLowerCase().includes(query.toLowerCase())) return false;
-    if (deptFilter && d.department !== deptFilter) return false;
-    if (langFilter && !d.languages.includes(langFilter)) return false;
-    if (availFilter === 'today' && d.availability !== 'available') return false;
-    if (videoFilter && !d.consultationTypes.includes('video')) return false;
-    return true;
-  });
+  const [doctors, setDoctors] = useState<MasterDoctor[]>([]);
+  const [departments, setDepartments] = useState<MasterDepartment[]>([]);
+  const [branches, setBranches] = useState<MasterBranch[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const [search, setSearch] = useState('');
+  const [selectedDept, setSelectedDept] = useState(initialDept);
+  const [selectedBranch, setSelectedBranch] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [maxFee, setMaxFee] = useState<string>('');
+  const [availableTodayOnly, setAvailableTodayOnly] = useState(false);
+
+  useEffect(() => {
+    void Promise.all([
+      SupabaseService.getDoctors(),
+      SupabaseService.getDepartments(),
+      SupabaseService.getBranches(),
+    ]).then(([docs, depts, brs]) => {
+      setDoctors(docs);
+      setDepartments(depts);
+      setBranches(brs);
+      setLoading(false);
+    });
+  }, []);
+
+  const allLanguages = useMemo(() => {
+    const set = new Set<string>();
+    doctors.forEach(d => d.languages.forEach(l => set.add(l)));
+    return Array.from(set).sort();
+  }, [doctors]);
+
+  const filtered = useMemo(() => {
+    return doctors.filter(d => {
+      const q = search.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        d.name.toLowerCase().includes(q) ||
+        d.designation.toLowerCase().includes(q) ||
+        d.specialty.toLowerCase().includes(q) ||
+        d.departmentName.toLowerCase().includes(q);
+
+      const matchesDept = !selectedDept || d.departmentSlug === selectedDept;
+      const matchesBranch = !selectedBranch || d.branchSlug === selectedBranch;
+      const matchesLanguage = !selectedLanguage || d.languages.includes(selectedLanguage);
+      const matchesFee = !maxFee || d.feeInClinic <= Number(maxFee);
+      const matchesAvail = !availableTodayOnly || d.availability === 'available';
+
+      return (
+        matchesSearch &&
+        matchesDept &&
+        matchesBranch &&
+        matchesLanguage &&
+        matchesFee &&
+        matchesAvail
+      );
+    });
+  }, [doctors, search, selectedDept, selectedBranch, selectedLanguage, maxFee, availableTodayOnly]);
+
+  const clearFilters = () => {
+    setSearch('');
+    setSelectedDept('');
+    setSelectedBranch('');
+    setSelectedLanguage('');
+    setMaxFee('');
+    setAvailableTodayOnly(false);
+  };
 
   return (
     <div className="bg-paper min-h-screen">
-      {/* Hero */}
-      <div className="bg-bone border-b border-sage-light py-16">
+      {/* Header */}
+      <div className="bg-bone border-b border-sage-light py-14">
         <div className="section-container">
-          <p className="font-mono text-xs font-medium text-verdigris tracking-widest uppercase mb-3">
-            Consultant Faculty Directory
-          </p>
-          <h1 className="font-display text-5xl md:text-6xl font-bold text-ink mb-4">
-            Specialist Doctors
+          <span className="font-mono text-xs font-semibold uppercase tracking-widest text-verdigris block mb-2">
+            Medical Faculty · {doctors.length} Specialists
+          </span>
+          <h1 className="font-display text-4xl sm:text-5xl font-bold text-ink mb-3">
+            Find your doctor.
           </h1>
-          <p className="text-ink-soft text-lg max-w-2xl">
-            Senior clinical faculty, surgeons, and pediatricians with verified Medical Council credentials, explicit OPD schedules, and transparent consultation fees.
+          <p className="text-ink-soft max-w-2xl text-base leading-relaxed">
+            Inspect verified qualifications, languages spoken, real consultation fees in INR, and available clinic or video slots before booking.
           </p>
-          <DemoBadge className="mt-3" />
         </div>
       </div>
 
-      <div className="section-container py-10 space-y-8">
-        {/* Filters */}
-        <div className="flex flex-wrap items-center gap-3 bg-paper p-4 rounded-xl border border-sage-light shadow-warm-xs">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" size={16} />
-            <input
-              type="search"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search by doctor, qualification or specialty…"
-              className="input pl-9 py-2 text-sm w-full"
-            />
+      {/* Filters Bar */}
+      <div className="bg-paper border-b border-sage-light sticky top-14 z-sticky">
+        <div className="section-container py-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+            <div className="relative lg:col-span-2">
+              <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
+              <input
+                type="search"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search doctor name or specialty…"
+                className="input pl-10 text-sm"
+                aria-label="Search doctors"
+              />
+            </div>
+
+            <select
+              value={selectedDept}
+              onChange={e => setSelectedDept(e.target.value)}
+              className="input text-sm"
+              aria-label="Filter by department"
+            >
+              <option value="">All Departments</option>
+              {departments.map(d => (
+                <option key={d.slug} value={d.slug}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedBranch}
+              onChange={e => setSelectedBranch(e.target.value)}
+              className="input text-sm"
+              aria-label="Filter by branch"
+            >
+              <option value="">All Branches</option>
+              {branches.map(b => (
+                <option key={b.slug} value={b.slug}>
+                  {b.shortName}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={selectedLanguage}
+              onChange={e => setSelectedLanguage(e.target.value)}
+              className="input text-sm"
+              aria-label="Filter by language"
+            >
+              <option value="">Any Language</option>
+              {allLanguages.map(l => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={maxFee}
+              onChange={e => setMaxFee(e.target.value)}
+              className="input text-sm"
+              aria-label="Filter by max consultation fee"
+            >
+              <option value="">Any Fee</option>
+              <option value="800">Up to ₹800</option>
+              <option value="1000">Up to ₹1,000</option>
+              <option value="1200">Up to ₹1,200</option>
+            </select>
           </div>
 
-          <select
-            value={deptFilter}
-            onChange={e => setDeptFilter(e.target.value)}
-            className="input py-2 text-sm w-44"
-          >
-            <option value="">All Departments</option>
-            {DEPARTMENTS.map(d => (
-              <option key={d.id} value={d.name}>{d.name}</option>
-            ))}
-          </select>
+          <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setAvailableTodayOnly(v => !v)}
+                className={cn(
+                  'inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                  availableTodayOnly
+                    ? 'bg-verdigris text-white border-verdigris'
+                    : 'bg-bone text-ink-soft border-sage-light hover:border-verdigris'
+                )}
+              >
+                <AvailabilityDot status="available" />
+                Available today only
+              </button>
+              <span className="text-xs font-mono text-ink-soft">
+                Showing {filtered.length} {filtered.length === 1 ? 'doctor' : 'doctors'}
+              </span>
+            </div>
 
-          <select
-            value={langFilter}
-            onChange={e => setLangFilter(e.target.value)}
-            className="input py-2 text-sm w-36"
-          >
-            <option value="">All Languages</option>
-            <option value="English">English</option>
-            <option value="Hindi">Hindi (हिंदी)</option>
-            <option value="Marathi">Marathi (मराठी)</option>
-            <option value="Gujarati">Gujarati</option>
-            <option value="Tamil">Tamil</option>
-          </select>
-
-          <button
-            onClick={() => setAvailFilter(availFilter === 'today' ? '' : 'today')}
-            className={cn(
-              'chip text-xs font-medium cursor-pointer transition-all',
-              availFilter === 'today' ? 'bg-verdigris text-white border-verdigris shadow-warm-xs' : 'bg-paper text-ink'
+            {(search || selectedDept || selectedBranch || selectedLanguage || maxFee || availableTodayOnly) && (
+              <button
+                type="button"
+                onClick={clearFilters}
+                className="text-xs font-semibold text-verdigris hover:underline"
+              >
+                Reset all filters
+              </button>
             )}
-          >
-            Available Today
-          </button>
-
-          <button
-            onClick={() => setVideoFilter(v => !v)}
-            className={cn(
-              'chip text-xs font-medium cursor-pointer transition-all',
-              videoFilter ? 'bg-verdigris text-white border-verdigris shadow-warm-xs' : 'bg-paper text-ink'
-            )}
-          >
-            Video Consult (Tele-OPD)
-          </button>
+          </div>
         </div>
+      </div>
 
-        {/* Doctor Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {filtered.map((doc, i) => (
-            <motion.div
-              key={doc.id}
-              initial={{ opacity: 0, y: 12 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.04, duration: 0.3 }}
-              className="card bg-paper border border-sage-light rounded-2xl overflow-hidden hover:shadow-warm-md transition-all flex flex-col justify-between"
-            >
-              <div>
-                {/* Portrait Header */}
-                <div className="h-40 bg-gradient-to-b from-mint to-bone flex items-end justify-center pb-2 relative">
-                  <div className="w-20 h-24 bg-paper/60 backdrop-blur-sm rounded-t-full flex items-end justify-center pb-2 border border-sage-light">
-                    <span className="font-display font-bold text-2xl text-verdigris">
-                      {doc.name.split(' ')[1][0]}
-                    </span>
+      {/* Directory Grid */}
+      <div className="section-container py-10">
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3, 4, 5, 6].map(n => (
+              <div key={n} className="card p-5 space-y-4">
+                <Skeleton className="w-full h-72 rounded-2xl" />
+                <Skeleton lines={4} />
+              </div>
+            ))}
+          </div>
+        ) : filtered.length === 0 ? (
+          <EmptyState
+            title="No specialists match those filters"
+            description="Try clearing a language, fee cap, or branch filter to view more doctors."
+            action={
+              <button onClick={clearFilters} className="btn btn-primary btn-md">
+                Clear Filters
+              </button>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filtered.map((doc, idx) => (
+              <motion.article
+                key={doc.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(idx * 0.03, 0.25), duration: 0.35 }}
+                className="card p-5 flex flex-col justify-between bg-paper"
+              >
+                <div>
+                  <div className="relative mb-4">
+                    <DoctorAvatar
+                      name={doc.name}
+                      photoUrl={doc.photoUrl}
+                      alt={`${doc.name} portrait`}
+                      className="w-full"
+                    />
+                    <div className="absolute top-3 left-3 bg-paper/95 backdrop-blur-sm px-2.5 py-1 rounded-full border border-sage-light text-[11px] font-medium flex items-center gap-1.5">
+                      <AvailabilityDot status={doc.availability} />
+                      <span className="text-ink">{doc.nextSlotLabel}</span>
+                    </div>
+                    <div className="absolute top-3 right-3 bg-ink text-paper px-2.5 py-1 rounded-full font-mono text-xs font-bold flex items-center gap-0.5">
+                      <IndianRupee size={11} />
+                      <span>{doc.feeInClinic}</span>
+                    </div>
                   </div>
-                  <div className="absolute top-3 right-3">
-                    <AvailabilityDot status={doc.availability} />
-                  </div>
-                  <div className="absolute top-3 left-3">
-                    <Badge variant="default" size="sm" className="bg-paper/90 border-sage-light text-xs font-mono">
-                      {doc.department}
-                    </Badge>
-                  </div>
-                </div>
 
-                {/* Details */}
-                <div className="p-4 space-y-2">
-                  <div>
-                    <h3 className="font-display font-bold text-lg text-ink leading-tight hover:text-verdigris transition-colors">
-                      <Link to={ROUTES.doctor(doc.slug)}>{doc.name}</Link>
-                    </h3>
-                    <p className="text-xs text-ink-soft font-mono mt-0.5">{doc.qualifications}</p>
-                    <p className="text-xs font-semibold text-verdigris mt-1">{doc.specialty}</p>
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <div>
+                      <span className="font-mono text-[11px] font-semibold uppercase tracking-wider text-verdigris">
+                        {doc.departmentName}
+                      </span>
+                      <h2 className="font-display text-xl font-bold text-ink">
+                        <Link to={ROUTES.doctor(doc.slug)} className="hover:text-verdigris transition-colors">
+                          {doc.name}
+                        </Link>
+                      </h2>
+                    </div>
+                    <div className="inline-flex items-center gap-1 bg-bone px-2 py-1 rounded-lg border border-sage-light text-xs font-semibold text-ink flex-shrink-0">
+                      <Star size={12} className="fill-saffron text-saffron" />
+                      <span>{doc.rating}</span>
+                      <span className="text-ink-soft font-normal">({doc.reviewCount})</span>
+                    </div>
                   </div>
 
-                  <div className="space-y-1 pt-2 border-t border-sage-light text-xs text-ink-soft">
+                  <p className="text-xs font-medium text-ink-soft mb-3">{doc.designation}</p>
+
+                  <div className="space-y-1.5 text-xs text-ink-soft border-t border-sage-light/70 pt-3 mb-4">
+                    <p>{doc.experienceYears} years experience · {doc.qualifications.join(', ')}</p>
                     <p className="flex items-center gap-1.5">
-                      <Award size={13} className="text-verdigris flex-shrink-0" />
-                      <span>{doc.experience} Years Experience</span>
+                      <MapPin size={12} className="text-verdigris flex-shrink-0" />
+                      <span>{doc.branchName} · OPD ₹{doc.feeInClinic}</span>
                     </p>
+                    {doc.consultationTypes.includes('video') && (
+                      <p className="flex items-center gap-1.5">
+                        <Video size={12} className="text-verdigris flex-shrink-0" />
+                        <span>Video Consult ₹{doc.feeVideo}</span>
+                      </p>
+                    )}
                     <p className="flex items-center gap-1.5">
-                      <Clock size={13} className="text-verdigris flex-shrink-0" />
-                      <span>OPD: <strong>{doc.opdTimings}</strong> ({doc.opdDays})</span>
-                    </p>
-                    <p className="flex items-center gap-1.5">
-                      <Globe size={13} className="text-verdigris flex-shrink-0" />
+                      <Globe size={12} className="text-verdigris flex-shrink-0" />
                       <span>{doc.languages.join(', ')}</span>
                     </p>
                   </div>
-
-                  {/* Pricing */}
-                  <div className="pt-2 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] text-ink-soft uppercase tracking-wider block">OPD Fee</span>
-                      <span className="font-display text-base font-bold text-ink">₹{doc.consultationFee}</span>
-                    </div>
-                    {doc.consultationTypes.includes('video') && (
-                      <div className="text-right">
-                        <span className="text-[10px] text-ink-soft uppercase tracking-wider block">Video OPD</span>
-                        <span className="font-mono text-xs font-semibold text-verdigris">₹{doc.videoFee}</span>
-                      </div>
-                    )}
-                  </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="p-4 pt-0 border-t border-sage-light grid grid-cols-2 gap-2 mt-2">
-                <Link
-                  to={ROUTES.doctor(doc.slug)}
-                  className="btn btn-ghost btn-sm justify-center border border-sage-light text-xs"
-                >
-                  View Profile
-                </Link>
-                <Link
-                  to={`/book?doctorId=${doc.id}&doctorName=${encodeURIComponent(doc.name)}&department=${encodeURIComponent(doc.department)}`}
-                  className="btn btn-primary btn-sm justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)] text-xs font-semibold"
-                >
-                  Book Slot
-                </Link>
-              </div>
-            </motion.div>
-          ))}
-        </div>
-
-        {filtered.length === 0 && (
-          <div className="py-20 text-center">
-            <p className="text-ink-soft text-lg">No doctors match your filters.</p>
-            <button
-              onClick={() => { setQuery(''); setDeptFilter(''); setLangFilter(''); setAvailFilter(''); setVideoFilter(false); }}
-              className="mt-4 text-sm font-medium text-verdigris hover:underline"
-            >
-              Clear all filters
-            </button>
+                <div className="grid grid-cols-2 gap-2 pt-2">
+                  <Link
+                    to={ROUTES.doctor(doc.slug)}
+                    className="btn btn-secondary btn-sm justify-center"
+                  >
+                    Full Profile
+                  </Link>
+                  <Link
+                    to={`${ROUTES.book}?department=${doc.departmentSlug}&doctor=${doc.slug}`}
+                    className="btn btn-primary btn-sm justify-center"
+                  >
+                    Book · ₹{doc.feeInClinic}
+                  </Link>
+                </div>
+              </motion.article>
+            ))}
           </div>
         )}
       </div>
     </div>
   );
 }
-

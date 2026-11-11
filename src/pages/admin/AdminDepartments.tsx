@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { GripVertical, Edit3, Check, Plus, AlertCircle } from 'lucide-react';
 import { DEPARTMENTS } from '@/config/constants';
-import { Badge, DemoBadge, Button } from '@/components/ui';
+import { Badge, Button } from '@/components/ui';
 
 interface DepartmentItem {
   id: string;
@@ -44,10 +44,7 @@ export function AdminDepartments() {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-display text-3xl font-bold text-ink">Departments</h1>
-            <DemoBadge />
-          </div>
+          <h1 className="font-display text-3xl font-bold text-ink">Departments</h1>
           <p className="text-ink-soft text-sm">Configure hospital specialties, clinical heads, and operational status.</p>
         </div>
         <Button variant="primary" leftIcon={<Plus size={16} />}>

@@ -1,11 +1,14 @@
-// Closing CTA section — full-bleed verdigris-deep, giant serif + calm Relif Line
+// Homepage CTA, Patient Services, Verified Patient Reviews, Centres Map, FAQ & Accreditations Sections
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Phone, MessageCircle } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, Star, ChevronDown, ShieldCheck } from 'lucide-react';
 import { RelifLine } from '@/components/ui/RelifLine';
+import { SectionHeader } from '@/components/ui';
 import { ROUTES, APP_CONFIG } from '@/config/constants';
+import { SupabaseService, VerifiedReviewRecord } from '@/services/supabaseService';
+import type { MasterBranch } from '@/data/masterCatalog';
 
 export function ClosingCTASection() {
   return (
@@ -13,7 +16,6 @@ export function ClosingCTASection() {
       className="section-verdigris py-24 md:py-32 relative overflow-hidden"
       aria-label="Book appointment"
     >
-      {/* Calm Relif Line wave at top */}
       <div className="absolute top-0 left-0 right-0 opacity-20">
         <RelifLine variant="cta" color="var(--sage)" strokeWidth={1.5} animated={false} />
       </div>
@@ -23,14 +25,13 @@ export function ClosingCTASection() {
           initial={{ opacity: 0, y: 24 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
           className="text-center"
         >
-          {/* Giant serif headline */}
           <h2
             className="font-display font-semibold leading-tight text-balance mb-6"
             style={{
-              fontSize: 'clamp(2.5rem, 7vw, 6rem)',
+              fontSize: 'clamp(2.5rem, 7vw, 5.5rem)',
               color: '#E8F4EF',
               letterSpacing: '-0.03em',
             }}
@@ -42,11 +43,10 @@ export function ClosingCTASection() {
             </em>
           </h2>
 
-          <p className="text-lg mb-10 max-w-lg mx-auto" style={{ color: 'rgba(207,230,219,0.75)' }}>
-            One tap to book. We'll handle the rest.
+          <p className="text-lg mb-10 max-w-lg mx-auto" style={{ color: 'rgba(207,230,219,0.78)' }}>
+            Upfront consultation fees, instant slots and digital records — book in six calm steps.
           </p>
 
-          {/* CTAs */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Link
               to={ROUTES.book}
@@ -58,26 +58,25 @@ export function ClosingCTASection() {
             <a
               href={`tel:${APP_CONFIG.emergencyNumber}`}
               className="flex items-center gap-2 font-medium transition-opacity hover:opacity-80"
-              style={{ color: 'rgba(207,230,219,0.85)', borderRadius: '999px', padding: '1rem 2rem', border: '1.5px solid rgba(207,230,219,0.3)' }}
+              style={{ color: 'rgba(207,230,219,0.9)', borderRadius: '999px', padding: '1rem 2rem', border: '1.5px solid rgba(207,230,219,0.35)' }}
             >
               <Phone size={18} />
-              Call Us [Demo]
+              Call Helpline
             </a>
             <a
               href="https://wa.me/919820110660"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-2 font-medium transition-opacity hover:opacity-80"
-              style={{ color: 'rgba(207,230,219,0.85)', borderRadius: '999px', padding: '1rem 2rem', border: '1.5px solid rgba(207,230,219,0.3)' }}
+              style={{ color: 'rgba(207,230,219,0.9)', borderRadius: '999px', padding: '1rem 2rem', border: '1.5px solid rgba(207,230,219,0.35)' }}
             >
               <MessageCircle size={18} />
-              WhatsApp
+              WhatsApp Desk
             </a>
           </div>
         </motion.div>
       </div>
 
-      {/* Calm Relif Line wave at bottom */}
       <div className="absolute bottom-0 left-0 right-0 opacity-30">
         <RelifLine variant="footer" color="var(--verdigris)" strokeWidth={2} animated={false} />
       </div>
@@ -85,15 +84,15 @@ export function ClosingCTASection() {
   );
 }
 
-// ── Patient Services section ───────────────────────────────────────────────
+// ── Patient Services ──────────────────────────────────────────────────────────
 export function PatientServicesSection() {
   const SERVICES = [
-    { label: 'Download Lab Reports',   href: ROUTES.patientRecords,  description: 'PDF reports available instantly' },
-    { label: 'Pay Your Bill',          href: ROUTES.patientBilling,  description: 'Secure online payments' },
-    { label: 'Video Consultation',     href: ROUTES.book,            description: 'Consult from home' },
-    { label: 'Second Opinion',         href: '#second-opinion',      description: 'Get expert review' },
-    { label: 'Home Sample Collection', href: '#home-sample',         description: 'Lab tests at your doorstep' },
-    { label: 'International Desk',     href: ROUTES.international,   description: 'Medical travel support' },
+    { label: 'My Appointments & Reschedule', href: ROUTES.patientAppointments, description: 'Reschedule slots or cancel with clear refund tracking' },
+    { label: 'Download Lab Reports',         href: ROUTES.patientRecords,      description: 'Verified pathology & imaging PDFs in your portal' },
+    { label: 'Billing & GST Receipts',       href: ROUTES.patientBilling,      description: 'Online payments, hospital receipts and refund history' },
+    { label: 'Video Consultation',           href: `${ROUTES.book}`,           description: 'Consult senior specialists remotely across Maharashtra' },
+    { label: 'Diagnostics & Packages',       href: ROUTES.diagnostics,         description: 'NABL pathology panels & imaging tariffs upfront' },
+    { label: 'Insurance & Cashless TPA',     href: ROUTES.insurance,           description: 'Supported empanelments and pre-authorisation desk' },
   ];
 
   return (
@@ -112,19 +111,15 @@ export function PatientServicesSection() {
               </em>
             </h2>
             <p className="section-subheading">
-              From booking to billing, we've made every step as easy as possible.
+              From transparent booking to instant digital receipts, every step respects your time.
             </p>
           </div>
           <div className="border-t border-sage-light">
-            {SERVICES.map((service, i) => (
-              <motion.a
+            {SERVICES.map((service) => (
+              <Link
                 key={service.label}
-                href={service.href}
-                className="group flex items-center justify-between py-4 border-b border-sage-light hover:pl-2 transition-all duration-300"
-                initial={{ opacity: 0, x: -8 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.05, duration: 0.4 }}
+                to={service.href}
+                className="group flex items-center justify-between py-4 border-b border-sage-light hover:pl-2 transition-all duration-200"
               >
                 <div>
                   <span className="font-semibold text-ink group-hover:text-verdigris transition-colors">
@@ -134,11 +129,11 @@ export function PatientServicesSection() {
                 </div>
                 <svg
                   width="20" height="20" viewBox="0 0 20 20" fill="none"
-                  className="text-sage group-hover:text-verdigris transition-all duration-300 group-hover:translate-x-1 flex-shrink-0 ml-4"
+                  className="text-sage group-hover:text-verdigris transition-all duration-200 group-hover:translate-x-1 flex-shrink-0 ml-4"
                 >
                   <path d="M4 10H16M12 6L16 10L12 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
-              </motion.a>
+              </Link>
             ))}
           </div>
         </div>
@@ -147,116 +142,101 @@ export function PatientServicesSection() {
   );
 }
 
-// ── Trust section ─────────────────────────────────────────────────────────
-export function TrustSection() {
-  const TESTIMONIALS = [
-    {
-      quote: "The booking process was so simple. I found the right doctor in minutes and my reports were on my phone the same day.",
-      patient: "R.M., Mumbai",
-      service: "Cardiology",
-    },
-    {
-      quote: "Dr. Kulkarni took the time to explain everything clearly. I didn't feel rushed. That made all the difference.",
-      patient: "S.D., Thane",
-      service: "Orthopedics",
-    },
-    {
-      quote: "My daughter was seen within the hour. The staff was calm and kind. Exactly what you need when you're worried.",
-      patient: "P.J., Pune",
-      service: "Pediatrics",
-    },
-  ];
+// ── Centres & Map Section ─────────────────────────────────────────────────────
+export function CentresMapSection() {
+  const [branches, setBranches] = useState<MasterBranch[]>([]);
+  const [selectedSlug, setSelectedSlug] = useState('andheri');
 
-  const [current, setCurrent] = React.useState(0);
-
-  React.useEffect(() => {
-    const interval = setInterval(() => setCurrent(c => (c + 1) % TESTIMONIALS.length), 6000);
-    return () => clearInterval(interval);
+  useEffect(() => {
+    void SupabaseService.getBranches().then(list => {
+      setBranches(list);
+      if (list[0]) setSelectedSlug(list[0].slug);
+    });
   }, []);
 
+  const activeBranch = branches.find(b => b.slug === selectedSlug) || branches[0];
+  const mapSrc = activeBranch
+    ? `https://www.openstreetmap.org/export/embed.html?bbox=${activeBranch.lng - 0.02}%2C${activeBranch.lat - 0.015}%2C${activeBranch.lng + 0.02}%2C${activeBranch.lat + 0.015}&layer=mapnik&marker=${activeBranch.lat}%2C${activeBranch.lng}`
+    : '';
+
   return (
-    <section className="section-padding" style={{ background: 'var(--bone)' }} aria-label="Patient stories">
+    <section className="section-padding bg-bone" aria-label="Hospital Centres & Locations">
       <div className="section-container">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          {/* Accreditations placeholder */}
-          <div>
-            <span className="font-mono text-xs font-medium text-verdigris tracking-widest uppercase block mb-6">
-              Recognized Benchmarks
-            </span>
-            <h2 className="section-heading mb-6">Clinical Trust & Safety.</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { title: 'NABH Accredited', sub: 'National Hospital Standards' },
-                { title: 'NABL Certified', sub: 'Precision Diagnostic Labs' },
-                { title: 'ISO 9001:2015', sub: 'Clinical Quality Management' },
-                { title: 'ABDM & ABHA Ready', sub: 'Digital Health Ecosystem' },
-              ].map(item => (
-                <div key={item.title} className="p-4 rounded-xl border border-sage bg-paper shadow-warm-xs">
-                  <p className="text-sm font-bold text-ink">{item.title}</p>
-                  <p className="text-xs text-ink-soft mt-1">
-                    {item.sub}
+        <SectionHeader
+          eyebrow="Our Centres"
+          title="Three Hospitals Across Maharashtra."
+          subtitle="Walk in 24/7 for emergencies or book scheduled OPD visits across Andheri West, Thane West, and Baner Pune."
+          align="center"
+        />
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+          <div className="lg:col-span-5 space-y-3">
+            {branches.map(branch => {
+              const active = branch.slug === selectedSlug;
+              return (
+                <button
+                  key={branch.slug}
+                  type="button"
+                  onClick={() => setSelectedSlug(branch.slug)}
+                  className={`w-full text-left p-5 rounded-2xl border transition-all ${
+                    active
+                      ? 'bg-paper border-verdigris shadow-warm-sm'
+                      : 'bg-paper/70 border-sage-light hover:border-sage'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
+                    <h3 className="font-display font-bold text-lg text-ink">{branch.name}</h3>
+                    {branch.isMain && (
+                      <span className="font-mono text-[10px] uppercase px-2 py-0.5 rounded-full bg-mint text-verdigris-deep font-semibold">
+                        Flagship
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-ink-soft mb-2 flex items-start gap-1.5">
+                    <MapPin size={13} className="text-verdigris flex-shrink-0 mt-0.5" />
+                    <span>{branch.address}</span>
                   </p>
-                </div>
-              ))}
-            </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-2 border-t border-sage-light/60">
+                    <span className="font-mono text-verdigris-deep font-semibold">{branch.phone}</span>
+                    <span className="text-ink-soft">{branch.timings}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
 
-          {/* Testimonials */}
-          <div>
-            <div className="relative overflow-hidden">
-              {TESTIMONIALS.map((t, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: i === current ? 1 : 0 }}
-                  transition={{ duration: 0.5 }}
-                  className={`${i === current ? 'block' : 'hidden'}`}
-                >
-                  <blockquote className="mb-6">
-                    <p
-                      className="font-display font-semibold text-ink leading-relaxed mb-4"
-                      style={{ fontSize: 'clamp(1.25rem, 2.5vw, 1.75rem)' }}
-                    >
-                      "{t.quote}"
-                    </p>
-                    <footer className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-mint flex items-center justify-center">
-                        <span className="text-xs font-bold text-verdigris">{t.patient[0]}</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{t.patient}</p>
-                        <p className="text-xs text-ink-soft">{t.service}</p>
-                      </div>
-                    </footer>
-                  </blockquote>
-                </motion.div>
-              ))}
-            </div>
-
-            {/* Controls */}
-            <div className="flex items-center gap-3">
-              {TESTIMONIALS.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrent(i)}
-                  className={`transition-all duration-300 rounded-full ${
-                    i === current
-                      ? 'w-6 h-2 bg-verdigris'
-                      : 'w-2 h-2 bg-sage'
-                  }`}
-                  aria-label={`Show testimonial ${i + 1}`}
-                  aria-current={i === current}
+          <div className="lg:col-span-7">
+            <div className="card h-full min-h-[320px] flex flex-col bg-paper">
+              {mapSrc && (
+                <iframe
+                  title={activeBranch?.name || 'Relif Care Location Map'}
+                  src={mapSrc}
+                  className="w-full flex-1 min-h-[280px] border-0"
+                  loading="lazy"
                 />
-              ))}
-              <button
-                onClick={() => setCurrent(c => (c === 0 ? TESTIMONIALS.length - 1 : c - 1))}
-                className="ml-auto text-ink-soft hover:text-ink transition-colors"
-                aria-label="Pause auto-advance"
-              >
-                ⏸
-              </button>
+              )}
+              {activeBranch && (
+                <div className="p-4 border-t border-sage-light flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <span className="text-ink font-medium">{activeBranch.address}</span>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${activeBranch.lat},${activeBranch.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-semibold text-verdigris hover:underline"
+                    >
+                      Open Directions →
+                    </a>
+                    <Link
+                      to={`${ROUTES.book}`}
+                      className="btn btn-primary btn-sm"
+                    >
+                      Book at {activeBranch.shortName}
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
-            <p className="text-xs text-ink-soft mt-3">Verified patient feedback from OPD & Inpatient services</p>
           </div>
         </div>
       </div>
@@ -264,3 +244,179 @@ export function TrustSection() {
   );
 }
 
+// ── Verified Patient Reviews & Clinical Benchmarks ────────────────────────────
+export function TrustSection() {
+  const [reviews, setReviews] = useState<VerifiedReviewRecord[]>([]);
+  const [current, setCurrent] = useState(0);
+
+  useEffect(() => {
+    void SupabaseService.getReviews().then(setReviews);
+  }, []);
+
+  useEffect(() => {
+    if (reviews.length <= 1) return;
+    const interval = setInterval(() => setCurrent(c => (c + 1) % reviews.length), 6000);
+    return () => clearInterval(interval);
+  }, [reviews.length]);
+
+  return (
+    <section className="section-padding bg-paper" aria-label="Patient stories & accreditations">
+      <div className="section-container">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <span className="font-mono text-xs font-medium text-verdigris tracking-widest uppercase block mb-3">
+              Recognized Benchmarks
+            </span>
+            <h2 className="section-heading mb-6">Clinical Trust &amp; Safety.</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { title: 'NABH Accredited', sub: 'National Hospital Standards' },
+                { title: 'NABL Certified', sub: 'Precision Diagnostic Labs' },
+                { title: 'ISO 9001:2015', sub: 'Clinical Quality Management' },
+                { title: 'ABDM & ABHA Ready', sub: 'Digital Health Ecosystem' },
+              ].map(item => (
+                <div key={item.title} className="p-4 rounded-xl border border-sage bg-bone shadow-warm-xs">
+                  <p className="text-sm font-bold text-ink">{item.title}</p>
+                  <p className="text-xs text-ink-soft mt-1">{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Verified Reviews from completed appointments only */}
+          <div className="card p-7 bg-bone border-sage">
+            <div className="flex items-center justify-between mb-4">
+              <span className="font-mono text-[11px] font-semibold uppercase tracking-widest text-verdigris flex items-center gap-1.5">
+                <ShieldCheck size={14} /> Verified Patient Reviews
+              </span>
+              {reviews.length > 0 && (
+                <span className="text-xs font-mono text-ink-soft">
+                  {current + 1} / {reviews.length}
+                </span>
+              )}
+            </div>
+
+            {reviews.length > 0 ? (
+              <div>
+                {(() => {
+                  const rev = reviews[current] || reviews[0];
+                  return (
+                    <blockquote>
+                      <div className="flex items-center gap-1 mb-3">
+                        {Array.from({ length: rev.rating }).map((_, idx) => (
+                          <Star key={idx} size={14} className="fill-saffron text-saffron" />
+                        ))}
+                      </div>
+                      <p className="font-display text-xl font-semibold text-ink leading-relaxed mb-4">
+                        &ldquo;{rev.comment}&rdquo;
+                      </p>
+                      <footer className="flex items-center justify-between gap-3 pt-3 border-t border-sage-light">
+                        <div>
+                          <p className="text-sm font-semibold text-ink">{rev.patient_display_name}</p>
+                          <p className="text-xs text-ink-soft">
+                            Verified visit · {rev.doctor_name || 'Relif Care Specialist'}
+                          </p>
+                        </div>
+                        <div className="flex gap-1.5">
+                          {reviews.map((r, i) => (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => setCurrent(i)}
+                              className={`h-2 rounded-full transition-all ${
+                                i === current ? 'w-5 bg-verdigris' : 'w-2 bg-sage'
+                              }`}
+                              aria-label={`View review ${i + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </footer>
+                    </blockquote>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="space-y-3 py-2">
+                <p className="font-display text-xl font-semibold text-ink">
+                  Only verified post-visit feedback appears here.
+                </p>
+                <p className="text-sm text-ink-soft leading-relaxed">
+                  To protect authenticity, Relif Care allows reviews exclusively from signed-in patients after a completed appointment in their portal.
+                </p>
+                <Link to={ROUTES.patientAppointments} className="inline-flex text-xs font-semibold text-verdigris hover:underline">
+                  View My Completed Visits →
+                </Link>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── Home FAQ Accordion ────────────────────────────────────────────────────────
+const HOME_FAQS = [
+  {
+    q: 'Can I see the exact consultation fee before confirming my slot?',
+    a: 'Yes. Every doctor card, specialist profile and every step of the 6-step booking flow displays the exact in-clinic or video fee and total payable amount before you commit.',
+  },
+  {
+    q: 'What is the cancellation and refund policy?',
+    a: 'Cancellations made 24 hours or more before your appointment receive a 100% refund. Cancellations between 2 to 24 hours receive a 50% refund. No refund applies within 2 hours of the scheduled slot.',
+  },
+  {
+    q: 'Can I pay at the hospital instead of paying online?',
+    a: 'Yes. On step 6 you can choose between Pay Online (UPI, Cards, Netbanking via Razorpay) or Pay at Hospital Desk with your booking confirmation.',
+  },
+  {
+    q: 'How does double-booking protection work?',
+    a: 'Each slot is locked atomically in PostgreSQL. Once reserved or paid, that time slot immediately closes and is struck out across all calendars until cancelled or freed.',
+  },
+];
+
+export function FAQSection() {
+  const [openIdx, setOpenIdx] = useState<number | null>(0);
+
+  return (
+    <section className="section-padding bg-bone" aria-label="Frequently Asked Questions">
+      <div className="section-container max-w-3xl">
+        <SectionHeader
+          eyebrow="Common Questions"
+          title="Clear Answers Before You Visit."
+          subtitle="Pricing, cancellation refunds, rescheduling and slot protection explained plainly."
+          align="center"
+        />
+
+        <div className="space-y-3">
+          {HOME_FAQS.map((item, i) => {
+            const isOpen = openIdx === i;
+            return (
+              <div key={item.q} className="card bg-paper border-sage-light">
+                <button
+                  type="button"
+                  onClick={() => setOpenIdx(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between gap-4 p-5 text-left"
+                  aria-expanded={isOpen}
+                >
+                  <span className="font-display font-semibold text-base text-ink">{item.q}</span>
+                  <ChevronDown
+                    size={18}
+                    className={`text-verdigris flex-shrink-0 transition-transform duration-200 ${
+                      isOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <div className="px-5 pb-5 text-sm text-ink-soft leading-relaxed border-t border-sage-light/60 pt-3">
+                    {item.a}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,18 +1,33 @@
 import React, { useState } from 'react';
-import { Phone, MapPin, AlertTriangle, ShieldAlert, HeartPulse, Activity } from 'lucide-react';
-import { Button, DemoBadge } from '@/components/ui';
+import { Phone, AlertTriangle, ShieldAlert, HeartPulse, Activity } from 'lucide-react';
+import { Button } from '@/components/ui';
 import { APP_CONFIG } from '@/config/constants';
+import { SupabaseService } from '@/services/supabaseService';
 
 export function EmergencyPage() {
   const [donorName, setDonorName] = useState('');
   const [bloodGroup, setBloodGroup] = useState('O+');
   const [donorPhone, setDonorPhone] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleDonorSubmit = (e: React.FormEvent) => {
+  const handleDonorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 4000);
+    setSubmitting(true);
+    try {
+      await SupabaseService.submitEnquiry({
+        name: donorName.trim(),
+        phone: donorPhone.trim(),
+        subject: `Blood Donor Registry — ${bloodGroup}`,
+        message: `Voluntary blood donor registration for group ${bloodGroup}.`,
+      });
+      setSubmitted(true);
+      setDonorName('');
+      setDonorPhone('');
+      setTimeout(() => setSubmitted(false), 5000);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -22,9 +37,8 @@ export function EmergencyPage() {
         <div className="section-container flex items-center justify-between text-xs sm:text-sm font-semibold">
           <div className="flex items-center gap-2">
             <ShieldAlert size={18} />
-            <span>CRITICAL EMERGENCY NOTICE — DEMO MODE. Numbers below are simulated placeholders.</span>
+            <span>24/7 EMERGENCY &amp; TRAUMA DESK — Direct triage hotline {APP_CONFIG.emergencyNumber} · Ambulance {APP_CONFIG.ambulanceNumber}</span>
           </div>
-          <span className="demo-badge bg-white/20 text-white border-white/30">Demo Only</span>
         </div>
       </div>
 
@@ -86,13 +100,12 @@ export function EmergencyPage() {
           </div>
         </div>
 
-        {/* Live Ambulance Tracking Demo */}
+        {/* Ambulance Dispatch Coverage */}
         <div className="bg-bone p-8 rounded-2xl border border-sage-light space-y-4">
           <div className="flex justify-between items-center">
             <div>
-              <span className="demo-badge">Simulation Mode</span>
-              <h2 className="font-display text-2xl font-bold text-ink mt-2">Ambulance GPS Dispatch Simulation</h2>
-              <p className="text-xs text-ink-soft">Simulated real-time vehicle telemetry along emergency corridor.</p>
+              <h2 className="font-display text-2xl font-bold text-ink">ALS Ambulance Coverage Across MMR &amp; Pune</h2>
+              <p className="text-xs text-ink-soft">GPS-equipped cardiac life-support ambulances stationed at Andheri West, Thane, and Baner.</p>
             </div>
           </div>
 
@@ -109,13 +122,10 @@ export function EmergencyPage() {
               <div className="inline-block p-3 rounded-full bg-signal text-white animate-pulse">
                 🚑
               </div>
-              <p className="text-xs font-mono text-white">Ambulance Unit #RH-04 En-route (Demo Telemetry)</p>
-              <p className="text-[11px] text-sage">Estimated Transit: 7 mins to Andheri Trauma Bay</p>
+              <p className="text-xs font-mono text-white">24/7 Dispatch Desk · {APP_CONFIG.ambulanceNumber}</p>
+              <p className="text-[11px] text-sage">Immediate roadside paramedic &amp; ACLS stabilization</p>
             </div>
           </div>
-          <p className="text-[11px] text-ink-soft italic">
-            * Disclaimer: This visual tracker is an architectural demo. Do not rely on this web application for live patient dispatch.
-          </p>
         </div>
 
         {/* Blood Bank Donation Registry */}
@@ -141,7 +151,7 @@ export function EmergencyPage() {
 
             {submitted ? (
               <div className="p-4 bg-mint border border-sage text-verdigris-deep rounded-xl text-sm font-medium">
-                Thank you! Your demo voluntary registration has been recorded in our simulated blood directory.
+                Thank you! Your voluntary donor registration has been recorded with our blood bank desk.
               </div>
             ) : (
               <form onSubmit={handleDonorSubmit} className="space-y-3">
@@ -181,8 +191,8 @@ export function EmergencyPage() {
                     />
                   </div>
                 </div>
-                <Button variant="primary" className="w-full" type="submit">
-                  Enroll in Donor Registry (Demo)
+                <Button variant="primary" className="w-full" type="submit" isLoading={submitting}>
+                  Enroll in Donor Registry
                 </Button>
               </form>
             )}

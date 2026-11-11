@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Calculator, Download, CheckCircle, FileText, HelpCircle, Shield } from 'lucide-react';
-import { Button, DemoBadge, Badge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 export function InsurancePage() {
   const [procedure, setProcedure] = useState('Angioplasty (Single Stent)');
@@ -34,7 +34,6 @@ export function InsurancePage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Financial ambiguity has no place in healing. Transparent package pricing, cashless TPA assistance desks, and verified insurance estimates.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -101,9 +100,9 @@ export function InsurancePage() {
                   variant="secondary"
                   size="sm"
                   leftIcon={<Download size={14} />}
-                  onClick={() => alert('Demo PDF cost breakdown sheet generated.')}
+                  onClick={() => window.print()}
                 >
-                  Download PDF Estimate
+                  Print / Save Estimate PDF
                 </Button>
                 <p className="text-[10px] text-ink-soft italic">
                   * Note: Estimates are illustrative benchmarks only. High-risk implants or comorbid ICU days are billed at actual tariff.
@@ -131,7 +130,7 @@ export function InsurancePage() {
               { name: 'Medi Assist TPA', status: 'Cashless Active' },
               { name: 'Vidal Health TPA', status: 'Cashless Active' },
               { name: 'Paramount TPA', status: 'Cashless Active' },
-              { name: 'PM-JAY Ayushman', status: 'Empanelled (Demo)' },
+              { name: 'PM-JAY Ayushman', status: 'Empanelled' },
             ].map(ins => (
               <div key={ins.name} className="p-4 bg-paper rounded-xl border border-sage-light flex flex-col justify-between h-24">
                 <span className="font-semibold text-ink text-sm">{ins.name}</span>

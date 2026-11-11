@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from 'lucide-react';
-import { Button, DemoBadge } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { APP_CONFIG } from '@/config/constants';
-import { supabase } from '@/config/supabase';
+import { SupabaseService } from '@/services/supabaseService';
 
 export function ContactPage() {
   const [sent, setSent] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -18,23 +19,22 @@ export function ContactPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setErrorMsg('');
     try {
-      await supabase.from('enquiries').insert([
-        {
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          department: formData.department,
-          message: formData.message,
-          created_at: new Date().toISOString(),
-        }
-      ]);
-    } catch {
-      // Offline fallback
+      await SupabaseService.submitEnquiry({
+        name: formData.name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email.trim() || undefined,
+        subject: formData.department,
+        message: formData.message.trim() || `Enquiry regarding ${formData.department}`,
+      });
+      setSent(true);
+      setFormData({ name: '', phone: '', email: '', department: 'General Hospital Query', message: '' });
+      setTimeout(() => setSent(false), 6000);
+    } catch (err: any) {
+      setErrorMsg(err?.message || 'Unable to submit enquiry right now.');
     } finally {
       setIsSubmitting(false);
-      setSent(true);
-      setTimeout(() => setSent(false), 5000);
     }
   };
 
@@ -50,7 +50,6 @@ export function ContactPage() {
           <p className="text-lg text-ink-soft max-w-2xl leading-relaxed">
             Whether inquiring about doctor availability, treatment costs, international medical travel, or providing feedback—our coordination team is accessible across multiple channels.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
@@ -68,7 +67,7 @@ export function ContactPage() {
                 <div className="p-5 bg-bone rounded-xl border border-sage-light space-y-2">
                   <div className="flex justify-between items-baseline">
                     <h3 className="font-display font-semibold text-ink text-base">Relif Hospital — Andheri (Main Multispecialty)</h3>
-                    <span className="demo-badge">24/7 ER</span>
+                    <span className="chip text-xs font-mono">24/7 ER</span>
                   </div>
                   <p className="text-xs text-ink-soft flex items-center gap-1.5">
                     <MapPin size={14} className="text-verdigris" /> Versova Link Road, Andheri West, Mumbai, MH 400053
@@ -153,14 +152,14 @@ export function ContactPage() {
               </div>
             </div>
 
-            <div className="p-5 bg-mint/40 rounded-xl border border-sage flex items-center justify-between">
+            <div className="p-5 bg-mint/40 rounded-xl border border-sage flex items-center justify-between gap-4">
               <div>
                 <p className="font-semibold text-ink text-sm">Need a Callback?</p>
-                <p className="text-xs text-ink-soft">Leave your contact and a patient care executive will call within 15 minutes.</p>
+                <p className="text-xs text-ink-soft">Call our 24/7 Care Desk or submit the enquiry form for a callback within 15 minutes.</p>
               </div>
-              <Button variant="secondary" size="sm" onClick={() => alert('Demo: Callback queued.')}>
-                Request Call
-              </Button>
+              <a href={`tel:${APP_CONFIG.emergencyNumber}`} className="btn btn-secondary btn-sm text-xs whitespace-nowrap">
+                Call Desk
+              </a>
             </div>
           </div>
 
@@ -171,9 +170,15 @@ export function ContactPage() {
               For general clinical enquiries or feedback. In medical emergencies, call the emergency line directly.
             </p>
 
+            {errorMsg && (
+              <div className="p-3 bg-[var(--signal-light)] text-[var(--signal-deep)] rounded-xl text-xs font-medium">
+                {errorMsg}
+              </div>
+            )}
+
             {sent ? (
               <div className="p-4 bg-mint border border-sage text-verdigris-deep rounded-xl text-sm font-medium">
-                Thank you! Your enquiry has been received in demo mode.
+                Thank you! Your enquiry has been recorded and our patient care coordinator will reach out shortly.
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="space-y-4">
@@ -236,7 +241,7 @@ export function ContactPage() {
                   />
                 </div>
                 <Button variant="primary" type="submit" disabled={isSubmitting} className="w-full">
-                  {isSubmitting ? 'Submitting to Supabase...' : 'Submit Enquiry (Demo)'}
+                  {isSubmitting ? 'Submitting enquiry…' : 'Submit Enquiry'}
                 </Button>
               </form>
             )}

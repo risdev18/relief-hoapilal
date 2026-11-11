@@ -1,787 +1,1296 @@
-// Booking Wizard — Full-screen focused flow, no site nav
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronRight, ChevronLeft, Check, Calendar, Video, MapPin, Printer, AlertCircle, FileText } from 'lucide-react';
-import { Stepper, Button, Badge, DemoBadge, QRCard } from '@/components/ui';
-import { RelifLine, SuccessRelifLine } from '@/components/ui/RelifLine';
-import { DEPARTMENTS, ROUTES } from '@/config/constants';
-import { cn, formatDate, generateAppointmentId } from '@/utils';
-import { SupabaseService } from '@/services/supabaseService';
-import confetti from 'canvas-confetti';
+// BookingWizard.tsx — Six-Step Clinical Appointment Booking with Live Fee Summary, Razorpay Checkout & PDF Receipt
 
-type ConsultationType = 'in-person' | 'video';
-type BookingStep = 'department' | 'doctor' | 'branch' | 'type' | 'date' | 'slot' | 'details' | 'confirm' | 'success';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Check, ChevronLeft, ChevronRight, Calendar as CalendarIcon, Clock, MapPin, Video,
+  Phone, Download, Search, Star, ShieldCheck, CreditCard, Building2, AlertCircle, BookmarkCheck, X
+} from 'lucide-react';
+import { Stepper, Button, Input, AvailabilityDot, QRCard, DoctorAvatar, Skeleton } from '@/components/ui';
+import { ROUTES } from '@/config/constants';
+import { cn } from '@/utils';
+import { SupabaseService, SlotRecord } from '@/services/supabaseService';
+import { AuthService, PatientUser } from '@/services/authService';
+import { PaymentService, PriceQuote, RazorpaySuccessPayload } from '@/services/paymentService';
+import type { MasterBranch, MasterDepartment, MasterDoctor } from '@/data/masterCatalog';
 
 const WIZARD_STEPS = [
-  { label: 'Department' },
-  { label: 'Doctor' },
-  { label: 'Branch & Type' },
-  { label: 'Date & Slot' },
-  { label: 'Details' },
-  { label: 'Confirm' },
+  { label: 'Department',        shortLabel: 'Dept' },
+  { label: 'Choose a Doctor',   shortLabel: 'Doctor' },
+  { label: 'Branch & Type',     shortLabel: 'Branch' },
+  { label: 'Date & Time Slot',  shortLabel: 'Slot' },
+  { label: 'Patient Details',   shortLabel: 'Details' },
+  { label: 'Review & Pay',      shortLabel: 'Pay' },
 ];
 
-const DEMO_DOCTORS_BY_DEPT: Record<string, { id: string; name: string; specialty: string; nextSlot: string; fee: number }[]> = {
-  'cardiology': [
-    { id: '1', name: 'Dr. Priya Sharma', specialty: 'Senior Interventional Cardiologist', nextSlot: 'Today 4:30 PM', fee: 1200 },
-    { id: '7', name: 'Dr. Vikram Rao', specialty: 'Cardiac Electrophysiologist', nextSlot: 'Tomorrow 10:00 AM', fee: 1200 },
-  ],
-  'orthopedics': [
-    { id: '2', name: 'Dr. Rajesh Kulkarni', specialty: 'Chief Robotic Joint Replacement Surgeon', nextSlot: 'Today 3:00 PM', fee: 1500 },
-  ],
-  'pediatrics': [
-    { id: '3', name: 'Dr. Ananya Joshi', specialty: 'Senior Consultant Pediatrician', nextSlot: 'Today 5:00 PM', fee: 900 },
-  ],
-  'dermatology': [
-    { id: '4', name: 'Dr. Meera Patel', specialty: 'Consultant Dermatologist', nextSlot: 'Tomorrow 11:30 AM', fee: 850 },
-  ],
-  'general-medicine': [
-    { id: '5', name: 'Dr. Arun Nair', specialty: 'Senior Consultant Physician', nextSlot: 'Today 2:30 PM', fee: 800 },
-  ],
-  'neurology': [
-    { id: '6', name: 'Dr. Sunita Desai', specialty: 'Chief of Neurosciences & Stroke', nextSlot: 'Tomorrow 10:00 AM', fee: 1400 },
-  ],
-  'gynecology': [
-    { id: '8', name: 'Dr. Deepa Krishnan', specialty: 'Senior Obstetrician & Gynecologist', nextSlot: 'Today 4:00 PM', fee: 1100 },
-  ],
-};
+const DRAFT_KEY = 'relif_booking_draft_v2';
 
-const BRANCHES = [
-  { id: 'andheri', name: 'Relif Hospital — Andheri (Main Flagship)', address: 'Versova Link Road, Andheri West, Mumbai', isMain: true },
-  { id: 'thane', name: 'Relif Day-Care & Oncology — Thane', address: 'Majiwada Junction, Eastern Express Highway, Thane West' },
-  { id: 'pune', name: 'Relif Orthopedics & Rehab — Pune', address: 'Baner High Street, Baner, Pune' },
-];
-
-const AVAILABLE_SLOTS = [
-  { time: '09:00 AM', available: true }, { time: '09:30 AM', available: false },
-  { time: '10:00 AM', available: true }, { time: '10:30 AM', available: true },
-  { time: '11:00 AM', available: false }, { time: '11:30 AM', available: true },
-  { time: '02:00 PM', available: true }, { time: '02:30 PM', available: true },
-  { time: '03:00 PM', available: false }, { time: '03:30 PM', available: true },
-  { time: '04:00 PM', available: true }, { time: '04:30 PM', available: true },
-];
-
-interface BookingData {
-  departmentId: string; departmentName: string;
-  doctorId: string; doctorName: string; doctorSpecialty: string;
-  branchId: string; branchName: string;
-  consultationType: ConsultationType;
-  date: string; slot: string;
-  patientName: string; patientPhone: string; patientEmail: string;
-  visitReason: string; isNewPatient: boolean;
-  uhid: string;
-  fee: number;
-}
-
-function StepHeader({ step, total, onClose }: { step: number; total: number; onClose: () => void }) {
-  return (
-    <div className="flex items-center justify-between mb-6">
-      <span className="font-mono text-xs text-ink-soft">Step {step + 1} of {total}</span>
-      <button onClick={onClose} className="p-2 rounded-lg text-ink-soft hover:bg-bone hover:text-ink transition-colors" aria-label="Close booking">
-        <X size={20} />
-      </button>
-    </div>
-  );
-}
+const UPCOMING_DATES = Array.from({ length: 7 }).map((_, i) => {
+  const d = new Date();
+  d.setDate(d.getDate() + i);
+  const iso = d.toISOString().split('T')[0];
+  const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d.toLocaleDateString('en-IN', { weekday: 'short' });
+  const day = d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  return { date: iso, label, day };
+});
 
 export function BookingWizard() {
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+
+  // Catalog state
+  const [departments, setDepartments] = useState<MasterDepartment[]>([]);
+  const [branches, setBranches] = useState<MasterBranch[]>([]);
+  const [doctors, setDoctors] = useState<MasterDoctor[]>([]);
+  const [catalogLoading, setCatalogLoading] = useState(true);
+  const [activeUser, setActiveUser] = useState<PatientUser | null>(() => AuthService.getActivePatient());
+
+  // Wizard step & saved selection
   const [step, setStep] = useState(0);
-  const [data, setData] = useState<Partial<BookingData>>({
-    branchId: 'andheri',
-    branchName: 'Relif Hospital — Andheri (Main Flagship)',
-    consultationType: 'in-person',
-    uhid: `RH26-${Math.floor(1000 + Math.random() * 9000)}`,
-    fee: 1000,
-    isNewPatient: true,
-  });
-  const [appointmentId] = useState(generateAppointmentId(Math.floor(Math.random() * 999) + 1));
-  const [conflictError, setConflictError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [selectedDeptSlug, setSelectedDeptSlug] = useState(searchParams.get('department') || '');
+  const [selectedDoctorSlug, setSelectedDoctorSlug] = useState(searchParams.get('doctor') || '');
+  const [selectedBranchSlug, setSelectedBranchSlug] = useState('');
+  const [visitType, setVisitType] = useState<'in-person' | 'video'>(
+    searchParams.get('type') === 'video' ? 'video' : 'in-person'
+  );
+  const [selectedDate, setSelectedDate] = useState(UPCOMING_DATES[0].date);
+  const [selectedSlot, setSelectedSlot] = useState('');
 
-  // Pre-fill from URL query parameters if available
+  // Step 2 (Doctor) filters
+  const [docSearch, setDocSearch] = useState('');
+  const [docBranchFilter, setDocBranchFilter] = useState('');
+  const [docLangFilter, setDocLangFilter] = useState('');
+  const [docMaxFee, setDocMaxFee] = useState('');
+  const [docAvailToday, setDocAvailToday] = useState(false);
+
+  // Slots
+  const [slots, setSlots] = useState<SlotRecord[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+
+  // Patient form
+  const [patientName, setPatientName] = useState('');
+  const [patientPhone, setPatientPhone] = useState('');
+  const [patientEmail, setPatientEmail] = useState('');
+  const [symptoms, setSymptoms] = useState('');
+
+  // Payment & Quote
+  const [paymentMode, setPaymentMode] = useState<'online' | 'pay_at_hospital'>('online');
+  const [quote, setQuote] = useState<PriceQuote | null>(null);
+  const [rzpModalOpen, setRzpModalOpen] = useState(false);
+  const [rzpMethod, setRzpMethod] = useState<'upi' | 'card' | 'netbanking'>('upi');
+  const [rzpUpiId, setRzpUpiId] = useState('patient@okaxis');
+
+  // Booking Outcome
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [draftSavedNotice, setDraftSavedNotice] = useState(false);
+  const [confirmation, setConfirmation] = useState<{
+    appointmentId: string;
+    bookingRef: string;
+    receiptNumber: string;
+    consultationFee: number;
+    taxAmount: number;
+    totalAmount: number;
+    paymentStatus: string;
+    razorpayPaymentId?: string;
+  } | null>(null);
+
+  // Load master catalog & sync auth
   useEffect(() => {
-    const urlDept = searchParams.get('department');
-    const urlDoctorId = searchParams.get('doctorId');
-    const urlDoctorName = searchParams.get('doctorName');
-    const urlSlot = searchParams.get('slot');
-
-    if (urlDept || urlDoctorName) {
-      setData(prev => ({
-        ...prev,
-        departmentName: urlDept || prev.departmentName || 'Cardiology',
-        doctorId: urlDoctorId || '1',
-        doctorName: urlDoctorName ? decodeURIComponent(urlDoctorName) : 'Dr. Priya Sharma',
-        slot: urlSlot ? decodeURIComponent(urlSlot) : '10:00 AM',
-        date: new Date().toISOString().split('T')[0],
-      }));
-      // Jump to date & slot or details if doctor is already chosen
-      if (urlDoctorName) {
-        setStep(3);
+    void Promise.all([
+      SupabaseService.getDepartments(),
+      SupabaseService.getBranches(),
+      SupabaseService.getDoctors(),
+      AuthService.syncSession(),
+    ]).then(([depts, brs, docs, user]) => {
+      setDepartments(depts);
+      setBranches(brs);
+      setDoctors(docs);
+      if (user) {
+        setActiveUser(user);
+        setPatientName(prev => prev || user.fullName);
+        setPatientPhone(prev => prev || user.phone);
+        setPatientEmail(prev => prev || user.email);
       }
-    }
+
+      // Apply URL params or saved draft
+      const urlDocSlug = searchParams.get('doctor');
+      const urlDeptSlug = searchParams.get('department');
+      if (urlDocSlug) {
+        const matchedDoc = docs.find(d => d.slug === urlDocSlug);
+        if (matchedDoc) {
+          setSelectedDeptSlug(matchedDoc.departmentSlug);
+          setSelectedDoctorSlug(matchedDoc.slug);
+          setSelectedBranchSlug(matchedDoc.branchSlug);
+          setStep(3);
+        }
+      } else if (urlDeptSlug && depts.some(d => d.slug === urlDeptSlug)) {
+        setSelectedDeptSlug(urlDeptSlug);
+        setStep(1);
+      } else {
+        try {
+          const rawDraft = sessionStorage.getItem(DRAFT_KEY);
+          if (rawDraft) {
+            const draft = JSON.parse(rawDraft);
+            if (draft.selectedDeptSlug) setSelectedDeptSlug(draft.selectedDeptSlug);
+            if (draft.selectedDoctorSlug) setSelectedDoctorSlug(draft.selectedDoctorSlug);
+            if (draft.selectedBranchSlug) setSelectedBranchSlug(draft.selectedBranchSlug);
+            if (draft.visitType) setVisitType(draft.visitType);
+            if (draft.selectedDate) setSelectedDate(draft.selectedDate);
+            if (draft.selectedSlot) setSelectedSlot(draft.selectedSlot);
+            if (draft.symptoms) setSymptoms(draft.symptoms);
+            if (typeof draft.step === 'number') setStep(Math.min(draft.step, 5));
+          }
+        } catch {
+          // ignore draft parse issues
+        }
+      }
+      setCatalogLoading(false);
+    });
   }, [searchParams]);
 
-  const steps: BookingStep[] = ['department', 'doctor', 'branch', 'date', 'details', 'confirm'];
-  const totalSteps = WIZARD_STEPS.length;
+  const selectedDepartment = useMemo(
+    () => departments.find(d => d.slug === selectedDeptSlug) || null,
+    [departments, selectedDeptSlug]
+  );
 
-  const next = () => setStep(s => Math.min(s + 1, totalSteps));
-  const prev = () => setStep(s => Math.max(s - 1, 0));
+  const selectedDoctor = useMemo(
+    () => doctors.find(d => d.slug === selectedDoctorSlug) || null,
+    [doctors, selectedDoctorSlug]
+  );
 
-  const deptKey = data.departmentId || (data.departmentName ? data.departmentName.toLowerCase().replace(/\s+/g, '-') : 'cardiology');
-  const deptDoctors = DEMO_DOCTORS_BY_DEPT[deptKey] || DEMO_DOCTORS_BY_DEPT['cardiology'];
-
-  // Indian phone validation (+91 10 digits starting with 6-9)
-  const validateIndianPhone = (phone: string) => {
-    const cleaned = phone.replace(/[\s\-\+]/g, '');
-    const nationalNumber = cleaned.startsWith('91') && cleaned.length === 12 ? cleaned.slice(2) : cleaned;
-    const isValid = /^[6-9]\d{9}$/.test(nationalNumber);
-    if (!isValid) {
-      setPhoneError('Please enter a valid 10-digit Indian mobile number (e.g., 98201 12345).');
-      return false;
+  const selectedBranch = useMemo(() => {
+    if (selectedBranchSlug) {
+      return branches.find(b => b.slug === selectedBranchSlug) || branches[0] || null;
     }
-    setPhoneError(null);
+    if (selectedDoctor) {
+      return branches.find(b => b.slug === selectedDoctor.branchSlug) || branches[0] || null;
+    }
+    return branches[0] || null;
+  }, [branches, selectedBranchSlug, selectedDoctor]);
+
+  // All doctors in selected department + filters
+  const deptDoctors = useMemo(() => {
+    const base = selectedDeptSlug
+      ? doctors.filter(d => d.departmentSlug === selectedDeptSlug)
+      : doctors;
+    return base.filter(d => {
+      const q = docSearch.trim().toLowerCase();
+      const matchSearch =
+        !q ||
+        d.name.toLowerCase().includes(q) ||
+        d.specialty.toLowerCase().includes(q) ||
+        d.qualifications.join(' ').toLowerCase().includes(q);
+      const matchBranch = !docBranchFilter || d.branchSlug === docBranchFilter;
+      const matchLang = !docLangFilter || d.languages.includes(docLangFilter);
+      const matchFee = !docMaxFee || d.feeInClinic <= Number(docMaxFee);
+      const matchAvail = !docAvailToday || d.availability === 'available';
+      return matchSearch && matchBranch && matchLang && matchFee && matchAvail;
+    });
+  }, [doctors, selectedDeptSlug, docSearch, docBranchFilter, docLangFilter, docMaxFee, docAvailToday]);
+
+  const availableLanguages = useMemo(() => {
+    const s = new Set<string>();
+    doctors.forEach(d => d.languages.forEach(l => s.add(l)));
+    return Array.from(s).sort();
+  }, [doctors]);
+
+  // Keep quote refreshed whenever doctor or visitType changes
+  useEffect(() => {
+    if (!selectedDoctor) {
+      setQuote(null);
+      return;
+    }
+    void PaymentService.getVerifiedQuote(selectedDoctor, visitType).then(setQuote);
+  }, [selectedDoctor, visitType]);
+
+  // Load slots when doctor/date/type changes
+  useEffect(() => {
+    if (!selectedDoctor || !selectedBranch || !selectedDate) return;
+    setSlotsLoading(true);
+    void SupabaseService.getDoctorSlots(
+      selectedDoctor.id,
+      selectedBranch.id,
+      selectedDate,
+      visitType
+    ).then(list => {
+      setSlots(list);
+      setSlotsLoading(false);
+    });
+  }, [selectedDoctor, selectedBranch, selectedDate, visitType]);
+
+  const handleSaveDraft = () => {
+    sessionStorage.setItem(
+      DRAFT_KEY,
+      JSON.stringify({
+        step,
+        selectedDeptSlug,
+        selectedDoctorSlug,
+        selectedBranchSlug,
+        visitType,
+        selectedDate,
+        selectedSlot,
+        symptoms,
+      })
+    );
+    setDraftSavedNotice(true);
+    setTimeout(() => setDraftSavedNotice(false), 3000);
+  };
+
+  const canProceed = () => {
+    if (step === 0) return Boolean(selectedDeptSlug);
+    if (step === 1) return Boolean(selectedDoctorSlug);
+    if (step === 2) return Boolean(selectedBranch);
+    if (step === 3) return Boolean(selectedDate && selectedSlot);
+    if (step === 4) {
+      return Boolean(activeUser && patientName.trim().length >= 2 && patientPhone.replace(/\D/g, '').length >= 10);
+    }
     return true;
   };
 
-  const handleConfirmBooking = async () => {
-    // 1. Double-booking protection: check for slot conflicts
-    const existing = SupabaseService.getLocalAppointments();
-    const isConflict = existing.some(
-      a => a.doctor_name.toLowerCase() === (data.doctorName || '').toLowerCase() &&
-           a.appointment_date === data.date &&
-           a.appointment_time === data.slot &&
-           a.status !== 'Cancelled'
-    );
+  const finalizeBooking = async (rzpPayload?: RazorpaySuccessPayload) => {
+    if (!selectedDoctor || !selectedBranch) return;
+    setSubmitting(true);
+    setSubmitError(null);
 
-    if (isConflict) {
-      setConflictError(
-        `Slot ${data.slot} on ${data.date} with ${data.doctorName} was just reserved by another patient. Please pick an alternative time slot.`
-      );
-      setStep(3); // Navigate back to slot selection
+    try {
+      const result = await SupabaseService.createBooking({
+        doctor: selectedDoctor,
+        branch: selectedBranch,
+        date: selectedDate,
+        time: selectedSlot,
+        consultationType: visitType,
+        patientName: patientName.trim(),
+        patientEmail: patientEmail.trim(),
+        patientPhone: patientPhone.trim(),
+        symptoms: symptoms.trim(),
+        paymentMode,
+        razorpayOrderId: rzpPayload?.razorpay_order_id,
+        razorpayPaymentId: rzpPayload?.razorpay_payment_id,
+        razorpaySignature: rzpPayload?.razorpay_signature,
+      });
+
+      sessionStorage.removeItem(DRAFT_KEY);
+      setConfirmation({
+        ...result,
+        razorpayPaymentId: rzpPayload?.razorpay_payment_id,
+      });
+    } catch (err: any) {
+      setSubmitError(err?.message || 'Could not confirm appointment. Please check your selected slot.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCommitPayment = async () => {
+    setSubmitError(null);
+    if (!selectedDoctor || !selectedBranch) return;
+    if (!activeUser) {
+      setSubmitError('Please sign in first so your appointment is saved to your Patient Portal.');
       return;
     }
 
-    try {
-      await SupabaseService.createAppointment({
-        patient_name: data.patientName || 'Anonymous Patient',
-        patient_phone: data.patientPhone || '+91 98201 00000',
-        patient_email: data.patientEmail,
-        doctor_name: data.doctorName || 'Assigned Specialist',
-        department_name: data.departmentName || 'General Medicine',
-        branch_name: data.branchName || 'Andheri Flagship',
-        appointment_date: data.date || new Date().toISOString().split('T')[0],
-        appointment_time: data.slot || '10:00 AM',
-        consultation_type: data.consultationType || 'in-person',
-        status: 'Confirmed',
-        visit_reason: data.visitReason,
-        is_new_patient: Boolean(data.isNewPatient),
-      });
-
-      confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-    } catch (e) {
-      console.warn('Non-fatal sync:', e);
+    if (paymentMode === 'pay_at_hospital') {
+      await finalizeBooking();
+      return;
     }
-    next();
-  };
 
-  const renderStep = () => {
-    switch (step) {
-      // ── Step 0: Department ──────────────────────────────────────────────
-      case 0:
-        return (
-          <div>
-            <h2 className="font-display text-3xl font-bold text-ink mb-2">Which department?</h2>
-            <p className="text-ink-soft mb-6">Choose the specialty you need.</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-96 overflow-y-auto pr-1">
-              {DEPARTMENTS.map(dept => (
-                <button
-                  key={dept.id}
-                  onClick={() => { setData(d => ({ ...d, departmentId: dept.id, departmentName: dept.name })); next(); }}
-                  className={cn(
-                    'text-left p-4 rounded-xl border transition-all duration-200',
-                    data.departmentId === dept.id
-                      ? 'border-verdigris bg-mint text-verdigris-deep'
-                      : 'border-sage-light bg-paper hover:border-verdigris hover:bg-mint-light text-ink'
-                  )}
-                >
-                  <span className="font-medium">{dept.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-
-      // ── Step 1: Doctor ──────────────────────────────────────────────────
-      case 1:
-        return (
-          <div>
-            <h2 className="font-display text-3xl font-bold text-ink mb-2">Choose a doctor</h2>
-            <p className="text-ink-soft mb-6">In <span className="font-medium text-verdigris">{data.departmentName}</span></p>
-            <div className="space-y-3">
-              {deptDoctors.map(doc => (
-                <button key={doc.id} onClick={() => { setData(d => ({ ...d, doctorId: doc.id, doctorName: doc.name, doctorSpecialty: doc.specialty })); next(); }}
-                  className={cn('w-full text-left p-5 rounded-xl border transition-all duration-200',
-                    data.doctorId === doc.id ? 'border-verdigris bg-mint' : 'border-sage-light bg-paper hover:border-verdigris hover:bg-mint-light'
-                  )}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-semibold text-ink">{doc.name}</p>
-                      <p className="text-sm text-ink-soft">{doc.specialty}</p>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-xs text-verdigris font-medium block">Next: {doc.nextSlot}</span>
-                      <ChevronRight size={16} className="text-sage ml-auto mt-1" />
-                    </div>
-                  </div>
-                </button>
-              ))}
-              <button onClick={() => { setData(d => ({ ...d, doctorId: 'any', doctorName: 'Any available doctor', doctorSpecialty: data.departmentName || '' })); next(); }}
-                className="w-full text-left p-5 rounded-xl border border-dashed border-sage hover:border-verdigris hover:bg-mint-light transition-all">
-                <p className="font-medium text-ink-soft">Any available doctor</p>
-                <p className="text-sm text-ink-soft">We'll assign the first available specialist</p>
-              </button>
-            </div>
-          </div>
-        );
-
-      // ── Step 2: Branch + Consultation type ─────────────────────────────
-      case 2:
-        return (
-          <div>
-            <h2 className="font-display text-3xl font-bold text-ink mb-6">Branch & consultation type</h2>
-            <div className="space-y-6">
-              <div>
-                <p className="font-medium text-ink mb-3">Choose a branch</p>
-                <div className="space-y-3">
-                  {BRANCHES.map(branch => (
-                    <button key={branch.id} onClick={() => setData(d => ({ ...d, branchId: branch.id, branchName: branch.name }))}
-                      className={cn('w-full text-left p-4 rounded-xl border transition-all',
-                        data.branchId === branch.id ? 'border-verdigris bg-mint' : 'border-sage-light bg-paper hover:border-verdigris')}>
-                      <div className="flex items-center gap-2">
-                        <MapPin size={16} className="text-verdigris flex-shrink-0" />
-                        <div>
-                          <p className="font-medium text-ink text-sm">{branch.name}</p>
-                          <p className="text-xs text-ink-soft">{branch.address}</p>
-                        </div>
-                        {branch.isMain && <Badge variant="default" size="sm" className="ml-auto">Main</Badge>}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <p className="font-medium text-ink mb-3">Consultation type</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <button onClick={() => setData(d => ({ ...d, consultationType: 'in-person' }))}
-                    className={cn('p-4 rounded-xl border transition-all text-left',
-                      data.consultationType === 'in-person' ? 'border-verdigris bg-mint' : 'border-sage-light hover:border-verdigris')}>
-                    <MapPin size={20} className="text-verdigris mb-2" />
-                    <p className="font-medium text-ink text-sm">In-person</p>
-                    <p className="text-xs text-ink-soft">Visit the branch</p>
-                  </button>
-                  <button onClick={() => setData(d => ({ ...d, consultationType: 'video' }))}
-                    className={cn('p-4 rounded-xl border transition-all text-left',
-                      data.consultationType === 'video' ? 'border-verdigris bg-mint' : 'border-sage-light hover:border-verdigris')}>
-                    <Video size={20} className="text-verdigris mb-2" />
-                    <p className="font-medium text-ink text-sm">Video consult</p>
-                    <p className="text-xs text-ink-soft">From home</p>
-                  </button>
-                </div>
-              </div>
-              <Button variant="primary" className="w-full justify-center"
-                disabled={!data.branchId || !data.consultationType} onClick={next}>
-                Continue
-              </Button>
-            </div>
-          </div>
-        );
-
-      // ── Step 3: Date + Slot ─────────────────────────────────────────────
-      case 3:
-        return (
-          <div>
-            <h2 className="font-display text-3xl font-bold text-ink mb-2">Pick a date & slot</h2>
-            <p className="text-xs text-ink-soft mb-6">OPD consultations run from 09:00 AM to 05:00 PM</p>
-
-            {conflictError && (
-              <div className="p-3 mb-6 bg-[var(--signal-light)] text-[var(--signal-deep)] border border-signal/30 rounded-xl text-xs flex items-center gap-2">
-                <AlertCircle size={16} className="text-signal flex-shrink-0" />
-                <span>{conflictError}</span>
-              </div>
-            )}
-
-            <div className="space-y-6">
-              <div>
-                <p className="font-medium text-ink mb-2 text-sm">Appointment Date (DD/MM/YYYY)</p>
-                <input
-                  type="date"
-                  value={data.date || ''}
-                  onChange={e => {
-                    setConflictError(null);
-                    setData(d => ({ ...d, date: e.target.value }));
-                  }}
-                  min={new Date().toISOString().split('T')[0]}
-                  className="input max-w-xs text-sm"
-                  aria-label="Appointment date"
-                />
-              </div>
-
-              {data.date && (
-                <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-medium text-ink text-sm">Available OPD Slots</p>
-                    <span className="text-[11px] font-mono text-verdigris">15-min intervals</span>
-                  </div>
-                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                    {AVAILABLE_SLOTS.map(s => (
-                      <button
-                        key={s.time}
-                        disabled={!s.available}
-                        onClick={() => {
-                          setConflictError(null);
-                          setData(d => ({ ...d, slot: s.time }));
-                        }}
-                        className={cn(
-                          'py-2.5 px-3 text-xs font-medium rounded-lg border transition-all',
-                          !s.available
-                            ? 'border-sage-light text-sage line-through cursor-not-allowed opacity-50 bg-bone/30'
-                            : data.slot === s.time
-                            ? 'border-saffron bg-saffron text-ink font-bold shadow-warm-xs'
-                            : 'border-sage-light hover:border-verdigris text-ink bg-paper'
-                        )}
-                      >
-                        {s.time}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              <Button
-                variant="primary"
-                className="w-full justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)]"
-                disabled={!data.date || !data.slot}
-                onClick={next}
-              >
-                Continue to Patient Details
-              </Button>
-            </div>
-          </div>
-        );
-
-      // ── Step 4: Patient details ─────────────────────────────────────────
-      case 4:
-        return (
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <h2 className="font-display text-3xl font-bold text-ink">Patient Details</h2>
-              <span className="font-mono text-xs bg-bone px-2 py-1 rounded-md border border-sage-light text-ink-soft">
-                UHID: {data.uhid}
-              </span>
-            </div>
-            <p className="text-xs text-ink-soft mb-6">
-              Compliant with Ayushman Bharat Digital Mission (ABDM) identification.
-            </p>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1.5 uppercase tracking-wider">
-                  Registration Category
-                </label>
-                <div className="flex gap-3">
-                  {[
-                    { label: 'New Patient (Auto-UHID)', val: true },
-                    { label: 'Existing Hospital Patient', val: false },
-                  ].map(opt => (
-                    <button
-                      key={String(opt.val)}
-                      onClick={() => setData(d => ({ ...d, isNewPatient: opt.val }))}
-                      className={cn(
-                        'flex-1 py-2.5 px-3 rounded-xl border text-xs font-medium transition-all',
-                        data.isNewPatient === opt.val
-                          ? 'border-verdigris bg-mint text-verdigris-deep'
-                          : 'border-sage-light hover:border-verdigris text-ink'
-                      )}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1 uppercase tracking-wider">
-                  Patient Full Name *
-                </label>
-                <input
-                  type="text"
-                  value={data.patientName || ''}
-                  onChange={e => setData(d => ({ ...d, patientName: e.target.value }))}
-                  className="input text-sm"
-                  placeholder="e.g., Rahul Vinod Mehta"
-                  required
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1 uppercase tracking-wider">
-                  Indian Mobile Number (10 digits) *
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-mono text-ink-soft">
-                    +91
-                  </span>
-                  <input
-                    type="tel"
-                    value={data.patientPhone || ''}
-                    onChange={e => {
-                      const val = e.target.value;
-                      setData(d => ({ ...d, patientPhone: val }));
-                      if (phoneError) validateIndianPhone(val);
-                    }}
-                    className="input pl-12 text-sm font-mono"
-                    placeholder="98201 12345"
-                    required
-                  />
-                </div>
-                {phoneError && (
-                  <p className="text-xs text-signal mt-1 flex items-center gap-1">
-                    <AlertCircle size={12} /> {phoneError}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1 uppercase tracking-wider">
-                  Email Address (Optional for Digital Report Dispatch)
-                </label>
-                <input
-                  type="email"
-                  value={data.patientEmail || ''}
-                  onChange={e => setData(d => ({ ...d, patientEmail: e.target.value }))}
-                  className="input text-sm"
-                  placeholder="rahul.mehta@example.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-ink mb-1 uppercase tracking-wider">
-                  Chief Medical Complaint / Purpose of Visit
-                </label>
-                <textarea
-                  value={data.visitReason || ''}
-                  onChange={e => setData(d => ({ ...d, visitReason: e.target.value }))}
-                  className="input resize-none text-sm"
-                  rows={3}
-                  placeholder="e.g., Routine cardiac follow-up, knee pain while walking..."
-                />
-              </div>
-
-              <Button
-                variant="primary"
-                className="w-full justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)] font-semibold"
-                disabled={!data.patientName || !data.patientPhone}
-                onClick={() => {
-                  if (validateIndianPhone(data.patientPhone || '')) {
-                    next();
-                  }
-                }}
-              >
-                Review & Confirm Appointment
-              </Button>
-            </div>
-          </div>
-        );
-
-      // ── Step 5: Confirm ─────────────────────────────────────────────────
-      case 5:
-        return (
-          <div>
-            <h2 className="font-display text-3xl font-bold text-ink mb-2">Review & Confirm</h2>
-            <p className="text-xs text-ink-soft mb-6">
-              Please verify your appointment and hospital reporting details.
-            </p>
-
-            <div className="card p-6 mb-6 space-y-4 bg-paper border border-sage-light shadow-warm-xs">
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Assigned UHID</p>
-                  <p className="font-mono font-bold text-verdigris">{data.uhid}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">OPD Tariff (INR)</p>
-                  <p className="font-display font-bold text-ink">₹{data.fee || 1200}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Department</p>
-                  <p className="font-medium text-ink">{data.departmentName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Consultant Doctor</p>
-                  <p className="font-medium text-ink">{data.doctorName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Hospital Center</p>
-                  <p className="font-medium text-ink text-xs">{data.branchName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Consultation Mode</p>
-                  <p className="font-medium text-ink capitalize">{data.consultationType}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Appointment Date</p>
-                  <p className="font-medium text-ink">{data.date}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Time Slot</p>
-                  <p className="font-medium text-ink">{data.slot}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Patient Name</p>
-                  <p className="font-medium text-ink">{data.patientName}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-ink-soft mb-0.5">Contact Phone</p>
-                  <p className="font-mono text-ink text-xs">{data.patientPhone}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-xl bg-bone border border-sage-light p-4 mb-6">
-              <p className="text-xs text-ink-soft leading-relaxed">
-                <strong>Hospital Reporting Note:</strong> Please report to the Ground Floor OPD registration desk 15 minutes before your scheduled slot with your government photo ID or ABHA card.
-              </p>
-            </div>
-
-            <Button
-              variant="primary"
-              size="lg"
-              className="w-full justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)] font-bold"
-              onClick={handleConfirmBooking}
-            >
-              Confirm Appointment Booking
-            </Button>
-          </div>
-        );
-
-      // ── Step 6: Success ─────────────────────────────────────────────────
-      case 6:
-        return (
-          <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 rounded-full bg-mint flex items-center justify-center">
-                <Check size={32} className="text-verdigris" />
-              </div>
-            </div>
-            <SuccessRelifLine className="mb-4 max-w-xs mx-auto" />
-            <h2 className="font-display text-4xl font-bold text-ink mb-1">Appointment Confirmed</h2>
-            <p className="text-sm text-ink-soft mb-6">
-              Token registered with Supabase Cloud & Hospital Desk (Demo).
-            </p>
-
-            <div className="flex justify-center mb-6">
-              <QRCard
-                appointmentId={appointmentId}
-                patientName={data.patientName || 'Patient'}
-                date={data.date || ''}
-                time={data.slot || ''}
-                doctor={data.doctorName || ''}
-                department={data.departmentName || ''}
-                qrValue={appointmentId}
-              />
-            </div>
-
-            <div className="flex flex-wrap justify-center gap-3">
-              <Button
-                variant="primary"
-                className="bg-verdigris text-white hover:bg-verdigris-deep flex items-center gap-2"
-                onClick={() => setShowReceiptModal(true)}
-              >
-                <Printer size={16} />
-                Print / View OPD Slip
-              </Button>
-              <Button variant="secondary" onClick={() => navigate(ROUTES.patientAppointments)}>
-                View in My Appointments
-              </Button>
-              <Button variant="ghost" onClick={() => { setStep(0); setData({}); }}>
-                Book Another
-              </Button>
-            </div>
-
-            <p className="text-xs text-ink-soft mt-6">
-              Demo — simulated appointment token. No actual SMS will be dispatched.
-            </p>
-          </div>
-        );
-
-      default:
-        return null;
+    // Pay Online via Razorpay
+    const order = await PaymentService.createServerOrder(selectedDoctor.id, visitType);
+    if (PaymentService.hasLiveRazorpayKey()) {
+      try {
+        setSubmitting(true);
+        const res = await PaymentService.openNativeRazorpay({
+          orderId: order?.orderId || `order_${Date.now()}`,
+          amountPaise: order?.amountPaise || (quote?.totalAmount || selectedDoctor.feeInClinic) * 100,
+          keyId: order?.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID,
+          patientName,
+          patientEmail,
+          patientPhone,
+          description: `${selectedDoctor.name} — ${selectedDoctor.departmentName}`,
+        });
+        await finalizeBooking(res);
+      } catch (err: any) {
+        setSubmitting(false);
+        setSubmitError(err?.message || 'Razorpay checkout cancelled.');
+      }
+    } else {
+      // Open Interactive Razorpay Test Mode Checkout Sheet
+      setRzpModalOpen(true);
     }
   };
 
-  return (
-    <div className="min-h-screen bg-paper flex flex-col">
-      {/* Top bar */}
-      <div className="bg-paper border-b border-sage-light">
-        <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <Link to="/" className="font-display font-semibold text-lg text-ink">relif</Link>
-          <DemoBadge />
-        </div>
-      </div>
+  const handleCompleteTestPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedDoctor) return;
+    setRzpModalOpen(false);
+    const order = await PaymentService.createServerOrder(selectedDoctor.id, visitType);
+    const payload: RazorpaySuccessPayload = {
+      razorpay_order_id: order?.orderId || `order_test_${Date.now()}`,
+      razorpay_payment_id: `pay_test_${Math.random().toString(36).slice(2, 11)}`,
+      razorpay_signature: `sig_test_${Date.now()}`,
+      method: rzpMethod,
+    };
+    await finalizeBooking(payload);
+  };
 
-      <div className="flex flex-1">
-        {/* Left: Stepper (Relif Line fills as steps complete) */}
-        <div className="hidden lg:flex flex-col w-72 bg-bone border-r border-sage-light p-8">
-          <div className="mb-10">
-            <RelifLine variant={step >= 4 ? 'cta' : step >= 2 ? 'section' : 'hero'}
-              color="var(--verdigris)" strokeWidth={2} className="mb-6" />
-            <Stepper steps={WIZARD_STEPS} currentStep={Math.min(step, WIZARD_STEPS.length - 1)} />
-          </div>
-          <div className="mt-auto">
-            <p className="text-xs text-ink-soft leading-relaxed">
-              Your booking is secure. Appointment details will be sent to your phone and email (Demo — no real messages sent).
-            </p>
-          </div>
-        </div>
+  const handleDownloadPdf = () => {
+    if (!confirmation || !selectedDoctor || !selectedBranch) return;
+    PaymentService.downloadReceiptPDF({
+      bookingRef: confirmation.bookingRef,
+      receiptNumber: confirmation.receiptNumber,
+      patientName,
+      patientUhid: activeUser?.uhid,
+      patientPhone,
+      patientEmail,
+      doctorName: selectedDoctor.name,
+      departmentName: selectedDoctor.departmentName,
+      branchName: selectedBranch.shortName,
+      consultationType: visitType,
+      date: selectedDate,
+      time: selectedSlot,
+      consultationFee: confirmation.consultationFee,
+      taxAmount: confirmation.taxAmount,
+      totalAmount: confirmation.totalAmount,
+      paymentMode,
+      paymentStatus: confirmation.paymentStatus,
+      razorpayPaymentId: confirmation.razorpayPaymentId,
+    });
+  };
 
-        {/* Right: Step content */}
-        <div className="flex-1 overflow-auto">
-          <div className="max-w-xl mx-auto px-4 py-8">
-            {step < 6 && (
-              <>
-                {/* Mobile stepper */}
-                <div className="lg:hidden mb-6">
-                  <Stepper steps={WIZARD_STEPS} currentStep={Math.min(step, WIZARD_STEPS.length - 1)} />
+  // ── Booking Confirmation Receipt Screen ────────────────────────────────────
+  if (confirmation && selectedDoctor && selectedBranch) {
+    return (
+      <div className="min-h-screen bg-bone py-10 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-paper rounded-2xl border border-sage-light shadow-warm-lg overflow-hidden">
+            <div className="bg-ink text-paper p-6 sm:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-verdigris text-white text-xs font-mono uppercase mb-3">
+                  <Check size={14} /> Appointment Confirmed
+                </div>
+                <h1 className="font-display text-3xl font-bold text-paper">
+                  {selectedDoctor.name}
+                </h1>
+                <p className="text-mint/85 text-sm mt-1">
+                  {selectedDoctor.departmentName} · {selectedBranch.shortName} ·{' '}
+                  {visitType === 'video' ? 'Video Consultation' : 'In-Clinic OPD'}
+                </p>
+              </div>
+              <div className="text-left sm:text-right font-mono">
+                <p className="text-[11px] uppercase tracking-wider text-sage">Booking Ref</p>
+                <p className="text-lg font-bold text-saffron">{confirmation.bookingRef}</p>
+                <p className="text-[11px] text-mint/80 mt-0.5">Receipt: {confirmation.receiptNumber}</p>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+              <div className="md:col-span-7 space-y-5">
+                <div className="grid grid-cols-2 gap-4 p-4 rounded-xl bg-bone border border-sage-light text-sm">
+                  <div>
+                    <p className="text-xs text-ink-soft">Date</p>
+                    <p className="font-semibold text-ink">{selectedDate}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-ink-soft">Slot Time</p>
+                    <p className="font-semibold text-ink">{selectedSlot}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-ink-soft">Patient</p>
+                    <p className="font-semibold text-ink">{patientName}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-ink-soft">Payment Status</p>
+                    <p className="font-mono font-bold text-verdigris-deep uppercase">
+                      {confirmation.paymentStatus === 'paid' ? 'Paid Online' : 'Pay at Hospital'}
+                    </p>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-mono text-xs text-ink-soft">Step {step + 1} of {WIZARD_STEPS.length}</span>
-                  <Link to="/" className="p-2 rounded-lg text-ink-soft hover:bg-bone hover:text-ink transition-colors" aria-label="Close booking">
-                    <X size={20} />
+                <div className="p-4 rounded-xl border border-sage-light space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-ink-soft">Consultation Fee</span>
+                    <span className="font-mono font-semibold text-ink">₹{confirmation.consultationFee}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-ink-soft">Taxes (GST Exempt)</span>
+                    <span className="font-mono text-ink-soft">₹{confirmation.taxAmount}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-sage-light font-bold text-base">
+                    <span className="text-ink">Total</span>
+                    <span className="font-mono text-verdigris-deep">₹{confirmation.totalAmount}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button variant="primary" size="md" leftIcon={<Download size={16} />} onClick={handleDownloadPdf}>
+                    Download PDF Receipt
+                  </Button>
+                  <Link to={ROUTES.patientAppointments} className="btn btn-secondary btn-md">
+                    View in My Appointments →
                   </Link>
                 </div>
-              </>
-            )}
+              </div>
 
-            <AnimatePresence mode="wait">
-              <motion.div key={step}
-                initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -16 }}
-                transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}>
-                {renderStep()}
-              </motion.div>
-            </AnimatePresence>
-
-            {/* Back button */}
-            {step > 0 && step < 6 && (
-              <button onClick={prev} className="mt-6 flex items-center gap-2 text-sm font-medium text-ink-soft hover:text-ink transition-colors">
-                <ChevronLeft size={16} /> Back
-              </button>
-            )}
+              <div className="md:col-span-5 flex justify-center">
+                <QRCard
+                  appointmentId={confirmation.bookingRef}
+                  patientName={patientName}
+                  date={selectedDate}
+                  time={selectedSlot}
+                  doctor={selectedDoctor.name}
+                  department={selectedDoctor.departmentName}
+                  qrValue={confirmation.bookingRef}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
-      {/* Printable Receipt Modal */}
-      {showReceiptModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-night/70 backdrop-blur-sm animate-fade-in">
-          <div className="bg-paper max-w-lg w-full rounded-2xl border border-sage p-6 sm:p-8 shadow-warm-lg space-y-6 relative">
-            <button
-              onClick={() => setShowReceiptModal(false)}
-              className="absolute top-4 right-4 text-ink-soft hover:text-ink p-1 rounded-lg"
-              aria-label="Close receipt"
-            >
-              <X size={20} />
-            </button>
+    );
+  }
 
-            {/* Receipt Header */}
-            <div className="border-b-2 border-dashed border-sage-light pb-4 text-center space-y-1">
-              <span className="font-display font-bold text-2xl text-ink">RELIF HOSPITAL</span>
-              <p className="text-xs text-ink-soft font-mono">
-                Multispecialty Healthcare & Research Institute · NABH Accredited
-              </p>
-              <p className="text-[11px] text-sage">
-                Versova Link Road, Andheri West, Mumbai 400053 · 24/7 Helpline: 1066
-              </p>
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-mint text-verdigris-deep">
-                OFFICIAL OPD CONSULTATION SLIP (DEMO)
+  const feeDisplay = quote?.consultationFee ?? (selectedDoctor ? (visitType === 'video' ? selectedDoctor.feeVideo : selectedDoctor.feeInClinic) : null);
+  const taxDisplay = quote?.taxAmount ?? 0;
+  const totalDisplay = quote?.totalAmount ?? feeDisplay;
+
+  return (
+    <div className="min-h-screen bg-bone pb-20">
+      {/* Top Bar with Navigation & Save Progress */}
+      <header className="bg-paper border-b border-sage-light sticky top-0 z-sticky">
+        <div className="section-container py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Link to={ROUTES.home} className="font-display font-bold text-xl text-ink hover:text-verdigris">
+              relif <span className="font-mono text-xs text-saffron uppercase">Care</span>
+            </Link>
+            <span className="hidden sm:inline text-xs font-mono text-ink-soft border-l border-sage-light pl-3">
+              Appointment Booking · 6 Calm Steps
+            </span>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            {draftSavedNotice && (
+              <span className="text-xs font-mono text-verdigris-deep bg-mint px-2.5 py-1 rounded-full">
+                Progress saved
               </span>
-            </div>
-
-            {/* Receipt Body */}
-            <div className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-3 pb-3 border-b border-sage-light">
-                <div>
-                  <span className="text-ink-soft block text-[10px] uppercase">Token / Booking ID</span>
-                  <span className="font-mono font-bold text-ink text-sm">{appointmentId}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-ink-soft block text-[10px] uppercase">Patient UHID</span>
-                  <span className="font-mono font-bold text-verdigris text-sm">{data.uhid}</span>
-                </div>
-                <div>
-                  <span className="text-ink-soft block text-[10px] uppercase">Patient Name</span>
-                  <span className="font-bold text-ink">{data.patientName}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-ink-soft block text-[10px] uppercase">Contact Number</span>
-                  <span className="font-mono text-ink">{data.patientPhone}</span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 pb-3 border-b border-sage-light">
-                <div>
-                  <span className="text-ink-soft block text-[10px] uppercase">Consultant Doctor</span>
-                  <span className="font-bold text-ink">{data.doctorName}</span>
-                  <span className="text-ink-soft block">{data.departmentName}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-ink-soft block text-[10px] uppercase">Reporting OPD Room</span>
-                  <span className="font-bold text-ink">Room #204 (2nd Floor)</span>
-                </div>
-                <div>
-                  <span className="text-ink-soft block text-[10px] uppercase">Appointment Date & Slot</span>
-                  <span className="font-bold text-ink">{data.date} · {data.slot}</span>
-                </div>
-                <div className="text-right">
-                  <span className="text-ink-soft block text-[10px] uppercase">Consultation Mode</span>
-                  <span className="font-medium text-ink capitalize">{data.consultationType}</span>
-                </div>
-              </div>
-
-              <div className="flex justify-between items-center py-2 bg-bone px-3 rounded-lg border border-sage-light">
-                <span className="font-semibold text-ink">Consultation Tariff (Net Payable)</span>
-                <span className="font-display font-bold text-base text-ink">₹{data.fee || 1200}.00</span>
-              </div>
-            </div>
-
-            <div className="text-[11px] text-ink-soft space-y-1">
-              <p>• Please present this slip along with your Aadhaar / ABHA card at Counter 3.</p>
-              <p>• Emergency triage operates 24/7 independently of OPD token queues.</p>
-            </div>
-
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="primary"
-                className="flex-1 justify-center bg-saffron text-ink hover:bg-[var(--saffron-deep)]"
-                onClick={() => window.print()}
-              >
-                <Printer size={16} className="mr-1.5" /> Print Slip
-              </Button>
-              <Button
-                variant="secondary"
-                className="flex-1 justify-center"
-                onClick={() => setShowReceiptModal(false)}
-              >
-                Close
-              </Button>
-            </div>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-soft hover:text-verdigris px-3 py-1.5 rounded-full border border-sage-light bg-bone transition-colors"
+            >
+              <BookmarkCheck size={14} />
+              <span className="hidden sm:inline">Save Progress</span>
+            </button>
+            <Link
+              to={ROUTES.home}
+              onClick={handleSaveDraft}
+              className="text-xs font-semibold text-ink hover:text-signal px-3 py-1.5 rounded-full border border-sage-light hover:bg-bone transition-colors"
+            >
+              Save &amp; Exit
+            </Link>
           </div>
         </div>
-      )}
+      </header>
+
+      {/* Upfront Payment & Policy Disclosure Banner */}
+      <div className="bg-mint/45 border-b border-sage-light">
+        <div className="section-container py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs text-verdigris-deep">
+          <span className="flex items-center gap-1.5 font-medium">
+            <ShieldCheck size={14} className="text-verdigris flex-shrink-0" />
+            Pay online (UPI / Cards / Netbanking) or pay at hospital desk — transparent consultation fee shown upfront.
+          </span>
+          <Link to={ROUTES.legal('refund')} className="font-mono underline hover:text-ink">
+            Free cancellation &ge; 24 hrs · Refund Policy
+          </Link>
+        </div>
+      </div>
+
+      {/* Stepper */}
+      <div className="bg-paper border-b border-sage-light">
+        <div className="section-container py-4">
+          <Stepper steps={WIZARD_STEPS} currentStep={step} />
+        </div>
+      </div>
+
+      {/* Main Content + Persistent Live Fee Summary */}
+      <div className="section-container py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left: Step Workspace */}
+          <div className="lg:col-span-8">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+                className="bg-paper rounded-2xl border border-sage-light p-6 sm:p-8 shadow-warm-xs"
+              >
+                {/* STEP 1: DEPARTMENT */}
+                {step === 0 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h1 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                        1. Choose a clinical department
+                      </h1>
+                      <p className="text-sm text-ink-soft mt-1">
+                        Every specialist listed shows their upfront consultation fee in INR.
+                      </p>
+                    </div>
+
+                    {catalogLoading ? (
+                      <Skeleton lines={6} />
+                    ) : (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        {departments.map(dept => {
+                          const count = doctors.filter(d => d.departmentSlug === dept.slug).length;
+                          const minFee = Math.min(
+                            ...doctors.filter(d => d.departmentSlug === dept.slug).map(d => d.feeInClinic),
+                            800
+                          );
+                          const active = selectedDeptSlug === dept.slug;
+                          return (
+                            <button
+                              key={dept.slug}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDeptSlug(dept.slug);
+                                setSelectedDoctorSlug('');
+                                setSelectedSlot('');
+                              }}
+                              className={cn(
+                                'p-4 rounded-2xl border-2 text-left transition-all',
+                                active
+                                  ? 'border-verdigris bg-mint/35 shadow-warm-xs'
+                                  : 'border-sage-light bg-paper hover:border-sage'
+                              )}
+                            >
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-display font-bold text-lg text-ink">{dept.name}</span>
+                                <span className="font-mono text-xs font-semibold text-verdigris-deep bg-bone px-2 py-0.5 rounded-full border border-sage-light">
+                                  From ₹{minFee}
+                                </span>
+                              </div>
+                              <p className="text-xs text-ink-soft line-clamp-2 mb-2">{dept.description}</p>
+                              <p className="font-mono text-[11px] text-verdigris">
+                                {count} {count === 1 ? 'Specialist' : 'Specialists'} available
+                              </p>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 2: DOCTOR (Lists ALL doctors of chosen department + search & filters) */}
+                {step === 1 && (
+                  <div className="space-y-5">
+                    <div>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                        2. Choose a specialist in {selectedDepartment?.name || 'Department'}
+                      </h2>
+                      <p className="text-sm text-ink-soft mt-1">
+                        Showing all {deptDoctors.length} specialists in this department. Filter by branch, language, fee, or today&apos;s availability.
+                      </p>
+                    </div>
+
+                    {/* Search & Filters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 p-3.5 rounded-xl bg-bone border border-sage-light">
+                      <div className="relative sm:col-span-2 lg:col-span-1">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
+                        <input
+                          type="search"
+                          value={docSearch}
+                          onChange={e => setDocSearch(e.target.value)}
+                          placeholder="Search doctor…"
+                          className="input pl-8 py-2 text-xs"
+                        />
+                      </div>
+                      <select
+                        value={docBranchFilter}
+                        onChange={e => setDocBranchFilter(e.target.value)}
+                        className="input py-2 text-xs"
+                        aria-label="Filter by branch"
+                      >
+                        <option value="">All Branches</option>
+                        {branches.map(b => (
+                          <option key={b.slug} value={b.slug}>{b.shortName}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={docLangFilter}
+                        onChange={e => setDocLangFilter(e.target.value)}
+                        className="input py-2 text-xs"
+                        aria-label="Filter by language"
+                      >
+                        <option value="">Any Language</option>
+                        {availableLanguages.map(l => (
+                          <option key={l} value={l}>{l}</option>
+                        ))}
+                      </select>
+                      <select
+                        value={docMaxFee}
+                        onChange={e => setDocMaxFee(e.target.value)}
+                        className="input py-2 text-xs"
+                        aria-label="Filter by max fee"
+                      >
+                        <option value="">Any Fee</option>
+                        <option value="800">Up to ₹800</option>
+                        <option value="1000">Up to ₹1,000</option>
+                        <option value="1200">Up to ₹1,200</option>
+                      </select>
+
+                      <div className="sm:col-span-2 lg:col-span-4 flex items-center justify-between pt-1">
+                        <label className="inline-flex items-center gap-2 text-xs font-medium text-ink cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={docAvailToday}
+                            onChange={e => setDocAvailToday(e.target.checked)}
+                            className="accent-[var(--verdigris)]"
+                          />
+                          Available today only
+                        </label>
+                        {(docSearch || docBranchFilter || docLangFilter || docMaxFee || docAvailToday) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setDocSearch('');
+                              setDocBranchFilter('');
+                              setDocLangFilter('');
+                              setDocMaxFee('');
+                              setDocAvailToday(false);
+                            }}
+                            className="text-xs font-semibold text-verdigris hover:underline"
+                          >
+                            Reset filters
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Doctor List */}
+                    <div className="space-y-3">
+                      {deptDoctors.length === 0 ? (
+                        <div className="p-6 text-center bg-bone rounded-xl text-sm text-ink-soft">
+                          No doctors match the active filter combination. Reset filters to view all specialists.
+                        </div>
+                      ) : (
+                        deptDoctors.map(doc => {
+                          const active = selectedDoctorSlug === doc.slug;
+                          return (
+                            <button
+                              key={doc.id}
+                              type="button"
+                              onClick={() => {
+                                setSelectedDoctorSlug(doc.slug);
+                                setSelectedBranchSlug(doc.branchSlug);
+                                setSelectedSlot('');
+                              }}
+                              className={cn(
+                                'w-full p-4 rounded-2xl border-2 text-left flex flex-col sm:flex-row gap-4 items-start sm:items-center transition-all',
+                                active
+                                  ? 'border-verdigris bg-mint/30 shadow-warm-xs'
+                                  : 'border-sage-light bg-paper hover:border-sage'
+                              )}
+                            >
+                              <DoctorAvatar
+                                name={doc.name}
+                                photoUrl={doc.photoUrl}
+                                className="w-20 flex-shrink-0"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-wrap items-center gap-2 mb-1">
+                                  <h3 className="font-display font-bold text-lg text-ink">{doc.name}</h3>
+                                  <span className="inline-flex items-center gap-1 text-xs font-semibold text-ink bg-bone px-2 py-0.5 rounded-full border border-sage-light">
+                                    <Star size={11} className="fill-saffron text-saffron" />
+                                    {doc.rating} ({doc.reviewCount})
+                                  </span>
+                                </div>
+                                <p className="text-xs font-medium text-verdigris mb-1">{doc.designation}</p>
+                                <p className="text-xs text-ink-soft">
+                                  {doc.experienceYears} yrs exp · {doc.qualifications.join(', ')} · {doc.branchName}
+                                </p>
+                                <div className="flex flex-wrap items-center gap-3 mt-2 text-xs text-ink-soft">
+                                  <span>Languages: {doc.languages.join(', ')}</span>
+                                  <span className="inline-flex items-center gap-1">
+                                    <AvailabilityDot status={doc.availability} />
+                                    {doc.nextSlotLabel}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="sm:text-right flex-shrink-0">
+                                <p className="font-mono text-xs text-ink-soft">Consultation Fee</p>
+                                <p className="font-display text-2xl font-bold text-ink">₹{doc.feeInClinic}</p>
+                                <p className="font-mono text-[11px] text-verdigris">Video ₹{doc.feeVideo}</p>
+                              </div>
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 3: BRANCH & CONSULTATION TYPE */}
+                {step === 2 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                        3. Branch &amp; consultation type
+                      </h2>
+                      <p className="text-sm text-ink-soft mt-1">
+                        Fees adjust live in the summary panel when switching between In-Clinic and Video visits.
+                      </p>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="font-mono text-xs uppercase tracking-wider text-verdigris font-semibold">
+                        Consultation Mode
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setVisitType('in-person')}
+                          className={cn(
+                            'p-4 rounded-2xl border-2 text-left transition-all',
+                            visitType === 'in-person'
+                              ? 'border-verdigris bg-mint/35'
+                              : 'border-sage-light bg-paper hover:border-sage'
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <span className="inline-flex items-center gap-2 font-semibold text-ink">
+                              <MapPin size={16} className="text-verdigris" /> In-Clinic OPD Visit
+                            </span>
+                            <span className="font-mono font-bold text-verdigris-deep">
+                              ₹{selectedDoctor?.feeInClinic || 800}
+                            </span>
+                          </div>
+                          <p className="text-xs text-ink-soft">Physical examination at the hospital branch.</p>
+                        </button>
+
+                        {selectedDoctor?.consultationTypes.includes('video') && (
+                          <button
+                            type="button"
+                            onClick={() => setVisitType('video')}
+                            className={cn(
+                              'p-4 rounded-2xl border-2 text-left transition-all',
+                              visitType === 'video'
+                                ? 'border-verdigris bg-mint/35'
+                                : 'border-sage-light bg-paper hover:border-sage'
+                            )}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <span className="inline-flex items-center gap-2 font-semibold text-ink">
+                                <Video size={16} className="text-verdigris" /> Video Tele-Consultation
+                              </span>
+                              <span className="font-mono font-bold text-verdigris-deep">
+                                ₹{selectedDoctor?.feeVideo || 650}
+                              </span>
+                            </div>
+                            <p className="text-xs text-ink-soft">Secure HD video consult from home.</p>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3">
+                      <p className="font-mono text-xs uppercase tracking-wider text-verdigris font-semibold">
+                        Hospital Branch
+                      </p>
+                      <div className="space-y-2.5">
+                        {branches.map(br => {
+                          const active = selectedBranch?.slug === br.slug;
+                          return (
+                            <button
+                              key={br.slug}
+                              type="button"
+                              onClick={() => setSelectedBranchSlug(br.slug)}
+                              className={cn(
+                                'w-full p-4 rounded-xl border-2 text-left flex items-center justify-between transition-all',
+                                active
+                                  ? 'border-verdigris bg-mint/30'
+                                  : 'border-sage-light bg-paper hover:border-sage'
+                              )}
+                            >
+                              <div>
+                                <p className="font-semibold text-sm text-ink">{br.name}</p>
+                                <p className="text-xs text-ink-soft">{br.address}</p>
+                              </div>
+                              {selectedDoctor?.branchSlug === br.slug && (
+                                <span className="font-mono text-[10px] px-2 py-0.5 rounded-full bg-mint text-verdigris-deep font-semibold flex-shrink-0">
+                                  Doctor&apos;s Primary
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* STEP 4: DATE & TIME SLOT */}
+                {step === 3 && (
+                  <div className="space-y-6">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div>
+                        <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                          4. Pick date &amp; live time slot
+                        </h2>
+                        <p className="text-sm text-ink-soft mt-1">
+                          Already-reserved slots are struck out and locked against double-booking.
+                        </p>
+                      </div>
+                      <span className="font-mono text-xs font-bold px-3 py-1 rounded-full bg-bone border border-sage-light text-ink">
+                        Fee: ₹{feeDisplay}
+                      </span>
+                    </div>
+
+                    <div className="flex gap-2 overflow-x-auto pb-2">
+                      {UPCOMING_DATES.map(d => (
+                        <button
+                          key={d.date}
+                          type="button"
+                          onClick={() => {
+                            setSelectedDate(d.date);
+                            setSelectedSlot('');
+                          }}
+                          className={cn(
+                            'flex-shrink-0 px-4 py-3 rounded-xl border-2 text-center min-w-[92px] transition-all',
+                            selectedDate === d.date
+                              ? 'border-verdigris bg-mint/40'
+                              : 'border-sage-light bg-paper hover:border-sage'
+                          )}
+                        >
+                          <p className="text-xs text-ink-soft">{d.label}</p>
+                          <p className="font-semibold text-sm text-ink">{d.day}</p>
+                        </button>
+                      ))}
+                    </div>
+
+                    {slotsLoading ? (
+                      <Skeleton lines={3} />
+                    ) : (
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                        {slots.map(slot => {
+                          const unavailable = slot.isBooked || slot.isBlocked;
+                          const picked = selectedSlot === slot.time;
+                          return (
+                            <button
+                              key={slot.time}
+                              type="button"
+                              disabled={unavailable}
+                              onClick={() => setSelectedSlot(slot.time)}
+                              className={cn(
+                                'py-3 px-2 rounded-xl border text-xs font-mono transition-all',
+                                unavailable
+                                  ? 'bg-bone border-sage-light text-ink-muted line-through cursor-not-allowed opacity-60'
+                                  : picked
+                                  ? 'bg-saffron border-saffron text-ink font-bold shadow-warm-xs'
+                                  : 'bg-paper border-sage-light text-ink hover:border-verdigris'
+                              )}
+                            >
+                              {slot.time}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 5: PATIENT DETAILS */}
+                {step === 4 && (
+                  <div className="space-y-5">
+                    <div>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                        5. Patient contact &amp; reason for visit
+                      </h2>
+                      <p className="text-sm text-ink-soft mt-1">
+                        Booking must be attached to an authenticated Patient Portal account for receipts and refunds.
+                      </p>
+                    </div>
+
+                    {!activeUser ? (
+                      <div className="p-6 rounded-2xl bg-bone border border-sage space-y-4">
+                        <h3 className="font-display font-bold text-lg text-ink">
+                          Sign in or register to lock this slot
+                        </h3>
+                        <p className="text-sm text-ink-soft">
+                          Save your progress automatically, sign in with Email OTP or Password, and you will return right here with your selection intact.
+                        </p>
+                        <div className="flex flex-wrap gap-3">
+                          <Link
+                            to={`${ROUTES.login}?redirect=/book`}
+                            onClick={handleSaveDraft}
+                            className="btn btn-primary btn-md"
+                          >
+                            Sign In to Continue →
+                          </Link>
+                          <Link
+                            to={ROUTES.register}
+                            onClick={handleSaveDraft}
+                            className="btn btn-secondary btn-md"
+                          >
+                            New Patient Registration
+                          </Link>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className="p-3.5 rounded-xl bg-mint/40 border border-sage flex items-center justify-between text-xs">
+                          <span>
+                            Signed in as <strong>{activeUser.fullName}</strong> ({activeUser.uhid})
+                          </span>
+                          <span className="font-mono text-verdigris-deep font-semibold">Verified UHID</span>
+                        </div>
+
+                        <Input
+                          label="Patient Full Name"
+                          required
+                          value={patientName}
+                          onChange={e => setPatientName(e.target.value)}
+                          placeholder="Full legal name"
+                        />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <Input
+                            label="Mobile Number"
+                            type="tel"
+                            required
+                            value={patientPhone}
+                            onChange={e => setPatientPhone(e.target.value)}
+                            placeholder="10-digit Indian mobile"
+                          />
+                          <Input
+                            label="Email Address"
+                            type="email"
+                            value={patientEmail}
+                            onChange={e => setPatientEmail(e.target.value)}
+                            placeholder="Receipt & reminder email"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-ink mb-1.5">
+                            Symptoms / Clinical Notes (Optional)
+                          </label>
+                          <textarea
+                            rows={3}
+                            value={symptoms}
+                            onChange={e => setSymptoms(e.target.value)}
+                            placeholder="Briefly mention duration of symptoms or medications…"
+                            className="input text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* STEP 6: PAYMENT & FINAL COMMIT */}
+                {step === 5 && (
+                  <div className="space-y-6">
+                    <div>
+                      <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                        6. Choose payment mode &amp; confirm
+                      </h2>
+                      <p className="text-sm text-ink-soft mt-1">
+                        Server-verified consultation total: <strong>₹{totalDisplay}</strong>
+                      </p>
+                    </div>
+
+                    {submitError && (
+                      <div className="p-4 rounded-xl bg-[var(--signal-light)] border border-signal text-signal-deep text-xs flex items-start gap-2.5" role="alert">
+                        <AlertCircle size={16} className="flex-shrink-0 text-signal mt-0.5" />
+                        <div className="space-y-1">
+                          <p className="font-semibold">{submitError}</p>
+                          <button
+                            type="button"
+                            onClick={() => { setStep(3); setSubmitError(null); }}
+                            className="underline font-semibold text-verdigris-deep"
+                          >
+                            Pick another time slot
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMode('online')}
+                        className={cn(
+                          'p-5 rounded-2xl border-2 text-left transition-all',
+                          paymentMode === 'online'
+                            ? 'border-verdigris bg-mint/35 shadow-warm-xs'
+                            : 'border-sage-light bg-paper hover:border-sage'
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="inline-flex items-center gap-2 font-bold text-sm text-ink">
+                            <CreditCard size={16} className="text-verdigris" /> Pay Online (Razorpay)
+                          </span>
+                          <span className="font-mono text-sm font-bold text-verdigris-deep">
+                            ₹{totalDisplay}
+                          </span>
+                        </div>
+                        <p className="text-xs text-ink-soft">
+                          UPI, Credit/Debit Cards, or Netbanking in Razorpay Test Mode. Instant GST receipt PDF.
+                        </p>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setPaymentMode('pay_at_hospital')}
+                        className={cn(
+                          'p-5 rounded-2xl border-2 text-left transition-all',
+                          paymentMode === 'pay_at_hospital'
+                            ? 'border-verdigris bg-mint/35 shadow-warm-xs'
+                            : 'border-sage-light bg-paper hover:border-sage'
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="inline-flex items-center gap-2 font-bold text-sm text-ink">
+                            <Building2 size={16} className="text-verdigris" /> Pay at Hospital
+                          </span>
+                          <span className="font-mono text-sm font-bold text-ink">
+                            ₹{totalDisplay}
+                          </span>
+                        </div>
+                        <p className="text-xs text-ink-soft">
+                          Reserve your slot now and pay at the OPD reception desk on arrival.
+                        </p>
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl bg-bone border border-sage-light text-xs text-ink-soft space-y-1.5">
+                      <p className="font-semibold text-ink">Cancellation &amp; Refund Guarantee</p>
+                      <p>
+                        {quote?.cancellationPolicySummary ||
+                          'Free cancellation >= 24 hrs (100% refund) · 50% refund between 2–24 hrs · No refund within 2 hrs of slot.'}
+                      </p>
+                    </div>
+
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="lg"
+                      isLoading={submitting}
+                      onClick={handleCommitPayment}
+                      className="w-full justify-center"
+                    >
+                      {paymentMode === 'online'
+                        ? `Pay ₹${totalDisplay} & Confirm Slot`
+                        : `Confirm Booking · Pay ₹${totalDisplay} at Hospital`}
+                    </Button>
+                  </div>
+                )}
+
+                {/* Navigation Controls */}
+                <div className="flex items-center justify-between mt-8 pt-5 border-t border-sage-light">
+                  {step > 0 ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      leftIcon={<ChevronLeft size={16} />}
+                      onClick={() => setStep(s => s - 1)}
+                    >
+                      Back
+                    </Button>
+                  ) : (
+                    <div />
+                  )}
+
+                  {step < 5 && (
+                    <Button
+                      type="button"
+                      variant="primary"
+                      size="md"
+                      rightIcon={<ChevronRight size={16} />}
+                      disabled={!canProceed()}
+                      onClick={() => setStep(s => s + 1)}
+                    >
+                      Continue to {WIZARD_STEPS[step + 1]?.shortLabel}
+                    </Button>
+                  )}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Right: Persistent Live Price & Appointment Summary Panel */}
+          <aside className="lg:col-span-4 lg:sticky lg:top-20">
+            <div className="card p-6 bg-paper border-sage space-y-4 shadow-warm-md">
+              <div className="flex items-center justify-between border-b border-sage-light pb-3">
+                <span className="font-mono text-xs font-bold uppercase tracking-wider text-verdigris">
+                  Live Fee &amp; Visit Summary
+                </span>
+                <span className="font-mono text-[11px] text-ink-soft">
+                  Step {step + 1}/6
+                </span>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-soft">Department</span>
+                  <span className="font-semibold text-ink text-right">
+                    {selectedDepartment?.name || 'Not selected'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-soft">Doctor</span>
+                  <span className="font-semibold text-ink text-right">
+                    {selectedDoctor?.name || 'Not selected'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-soft">Branch</span>
+                  <span className="font-medium text-ink text-right">
+                    {selectedBranch?.shortName || 'Andheri West'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-soft">Visit Type</span>
+                  <span className="font-medium text-ink text-right">
+                    {visitType === 'video' ? 'Video Consult' : 'In-Clinic Visit'}
+                  </span>
+                </div>
+
+                <div className="flex justify-between gap-3">
+                  <span className="text-ink-soft">Date &amp; Time</span>
+                  <span className="font-mono font-medium text-ink text-right">
+                    {selectedSlot ? `${selectedDate} · ${selectedSlot}` : 'Not selected'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="border-t border-sage-light pt-3 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-ink-soft">Consultation Fee</span>
+                  <span className="font-mono font-semibold text-ink">
+                    {feeDisplay !== null ? `₹${feeDisplay}` : '—'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-ink-soft">Taxes (GST Exempt)</span>
+                  <span className="font-mono text-ink-soft">₹{taxDisplay}</span>
+                </div>
+                <div className="flex justify-between pt-2 border-t border-sage-light text-base font-bold">
+                  <span className="text-ink">Total Payable</span>
+                  <span className="font-mono text-verdigris-deep text-lg">
+                    {totalDisplay !== null ? `₹${totalDisplay}` : '—'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-bone border border-sage-light text-[11px] text-ink-soft space-y-1">
+                <p className="font-semibold text-ink">
+                  {paymentMode === 'online' ? 'Pay Online or Pay at Hospital' : 'Pay at Hospital Desk Selected'}
+                </p>
+                <p>100% refund &ge; 24 hrs · 50% refund 2–24 hrs · 0% &lt; 2 hrs.</p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+
+      {/* Razorpay Test Mode Checkout Modal (runs cleanly when sandbox key active) */}
+      <AnimatePresence>
+        {rzpModalOpen && selectedDoctor && (
+          <motion.div
+            className="fixed inset-0 z-modal flex items-center justify-center p-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={() => setRzpModalOpen(false)} />
+            <motion.form
+              onSubmit={handleCompleteTestPayment}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 w-full max-w-md bg-paper rounded-2xl border border-sage shadow-warm-xl overflow-hidden"
+            >
+              <div className="bg-ink text-paper p-5 flex items-center justify-between">
+                <div>
+                  <span className="font-mono text-[10px] uppercase tracking-widest text-saffron font-bold">
+                    Razorpay Test Checkout
+                  </span>
+                  <h3 className="font-display font-bold text-lg text-paper">Relif Care Multispecialty</h3>
+                  <p className="text-xs text-mint/80">{selectedDoctor.name} · {selectedSlot}</p>
+                </div>
+                <div className="text-right">
+                  <p className="font-mono text-xl font-bold text-saffron">₹{totalDisplay}</p>
+                  <button
+                    type="button"
+                    onClick={() => setRzpModalOpen(false)}
+                    className="text-xs text-mint/70 hover:text-white mt-1 inline-flex items-center gap-1"
+                  >
+                    <X size={13} /> Cancel
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5 space-y-4">
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: 'upi', label: 'UPI / QR' },
+                    { id: 'card', label: 'Card' },
+                    { id: 'netbanking', label: 'Netbanking' },
+                  ].map(m => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => setRzpMethod(m.id as any)}
+                      className={cn(
+                        'py-2 rounded-xl border text-xs font-semibold transition-all',
+                        rzpMethod === m.id
+                          ? 'border-verdigris bg-mint/40 text-verdigris-deep'
+                          : 'border-sage-light bg-bone text-ink-soft'
+                      )}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+
+                {rzpMethod === 'upi' && (
+                  <Input
+                    label="Test UPI ID"
+                    value={rzpUpiId}
+                    onChange={e => setRzpUpiId(e.target.value)}
+                    hint="Razorpay test mode processes immediately and records your payment in Supabase."
+                    required
+                  />
+                )}
+                {rzpMethod === 'card' && (
+                  <div className="p-3.5 rounded-xl bg-bone border border-sage-light text-xs text-ink-soft space-y-1">
+                    <p className="font-mono font-semibold text-ink">Test Visa Card: 4111 •••• •••• 1111</p>
+                    <p>Expiry 12/28 · CVV 123 (Sandbox Authorization)</p>
+                  </div>
+                )}
+                {rzpMethod === 'netbanking' && (
+                  <div className="p-3.5 rounded-xl bg-bone border border-sage-light text-xs text-ink-soft">
+                    Razorpay Test Netbanking Bank selected (Instant Sandbox Settlement).
+                  </div>
+                )}
+
+                <Button type="submit" variant="primary" size="lg" isLoading={submitting} className="w-full justify-center">
+                  Authorize Test Payment · ₹{totalDisplay}
+                </Button>
+              </div>
+            </motion.form>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-

@@ -28,7 +28,6 @@ const DiagnosticsPage      = lazy(() => import('@/pages/public/DiagnosticsPage')
 const BranchesPage         = lazy(() => import('@/pages/public/BranchesPage').then(m => ({ default: m.BranchesPage })));
 const CoEPage              = lazy(() => import('@/pages/public/CoEPage').then(m => ({ default: m.CoEPage })));
 const DesignSystemPage     = lazy(() => import('@/pages/public/DesignSystemPage').then(m => ({ default: m.DesignSystemPage })));
-const DemoGuidePage        = lazy(() => import('@/pages/public/DemoGuidePage').then(m => ({ default: m.DemoGuidePage })));
 
 // ── Booking ───────────────────────────────────────────────────────────────
 const BookingWizard = lazy(() => import('@/pages/booking/BookingWizard').then(m => ({ default: m.BookingWizard })));
@@ -146,7 +145,6 @@ export function App() {
             <Route path="/grievance"                   element={<LegalPage />} />
             <Route path="/faqs"                        element={<FAQsPage />} />
             <Route path="/design-system"               element={<DesignSystemPage />} />
-            <Route path="/demo-guide"                  element={<DemoGuidePage />} />
           </Route>
 
           {/* ── Booking wizard (standalone, no nav) ── */}

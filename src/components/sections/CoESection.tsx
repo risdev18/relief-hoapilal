@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { RelifLine } from '@/components/ui/RelifLine';
 import { ROUTES } from '@/config/constants';
-import { DemoBadge } from '@/components/ui';
 
 const COE_PANELS = [
   {
@@ -93,7 +92,6 @@ export function CoESection() {
               </em>
             </h2>
           </div>
-          <DemoBadge className="mb-2" />
         </div>
 
         {/* Relif Line progress bar */}

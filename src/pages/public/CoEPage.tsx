@@ -13,7 +13,7 @@ import {
   Syringe,
   Microscope,
 } from 'lucide-react';
-import { Button, DemoBadge, Badge } from '@/components/ui';
+import { Button, Badge } from '@/components/ui';
 
 export function CoEPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -148,7 +148,6 @@ export function CoEPage() {
           <p className="text-lg text-sage max-w-3xl leading-relaxed">
             Six high-acuity tertiary disciplines uniting senior medical boards, specialized ICUs, robotic operating theaters, and evidence-guided outcomes.
           </p>
-          <DemoBadge className="mt-4" />
         </div>
       </div>
 
