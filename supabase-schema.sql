@@ -7,19 +7,6 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- ── 1. Helper Role & Auth Functions ──────────────────────────────────────────
 
-CREATE OR REPLACE FUNCTION public.is_admin()
-RETURNS boolean
-LANGUAGE sql
-STABLE
-SECURITY DEFINER
-SET search_path = public
-AS $$
-  SELECT EXISTS (
-    SELECT 1 FROM public.profiles
-    WHERE id = auth.uid() AND role = 'admin'
-  );
-$$;
-
 CREATE OR REPLACE FUNCTION public.generate_uhid()
 RETURNS text
 LANGUAGE plpgsql
@@ -52,6 +39,19 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   created_at        timestamptz NOT NULL DEFAULT now(),
   updated_at        timestamptz NOT NULL DEFAULT now()
 );
+
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
 
 -- Auto-create profile when user signs up via Supabase Auth (Password or OTP)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
