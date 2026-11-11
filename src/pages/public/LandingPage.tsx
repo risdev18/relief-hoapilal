@@ -8,10 +8,10 @@ import { DepartmentsSection }           from '@/components/sections/DepartmentsS
 import { CoESection }                   from '@/components/sections/CoESection';
 import { FacilitiesSection }            from '@/components/sections/FacilitiesSection';
 import { DoctorsSection }               from '@/components/sections/DoctorsSection';
+import { PatientStoriesSection }        from '@/components/sections/PatientStoriesSection';
 import {
   PatientServicesSection,
   CentresMapSection,
-  TrustSection,
   FAQSection,
   ClosingCTASection,
 } from '@/components/sections/CTASections';
@@ -27,9 +27,9 @@ export function LandingPage() {
       <CoESection />
       <FacilitiesSection />
       <DoctorsSection />
+      <PatientStoriesSection />
       <PatientServicesSection />
       <CentresMapSection />
-      <TrustSection />
       <HealthLibraryTeaser />
       <FAQSection />
       <ClosingCTASection />

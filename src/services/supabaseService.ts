@@ -96,11 +96,21 @@ export interface VerifiedReviewRecord {
   doctor_id: string;
   doctor_name?: string;
   doctor_slug?: string;
+  department_id?: string;
+  department_name?: string;
+  department_slug?: string;
+  appointment_id?: string;
   patient_display_name: string;
   rating: number;
   comment: string;
   is_verified: boolean;
   created_at: string;
+}
+
+export interface ReviewsSummary {
+  averageRating: number;
+  totalCount: number;
+  recentAuthors: string[];
 }
 
 export interface PatientReportRecord {
@@ -596,11 +606,103 @@ export class SupabaseService {
   }
 
   // ── Reviews (Verified Completed-Visit Patients Only) ───────────────────────
+  private static mapReviewRow(r: any): VerifiedReviewRecord {
+    return {
+      id: r.id,
+      doctor_id: r.doctor_id,
+      doctor_name: r.doctors?.name,
+      doctor_slug: r.doctors?.slug,
+      department_id: r.doctors?.department_id || r.doctors?.departments?.id,
+      department_name: r.doctors?.departments?.name,
+      department_slug: r.doctors?.departments?.slug,
+      appointment_id: r.appointment_id,
+      patient_display_name: r.patient_display_name,
+      rating: Number(r.rating || 5),
+      comment: r.comment,
+      is_verified: Boolean(r.is_verified),
+      created_at: r.created_at,
+    };
+  }
+
+  static async getReviewsSummary(): Promise<ReviewsSummary> {
+    try {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('rating, patient_display_name')
+        .order('created_at', { ascending: false });
+
+      if (error || !data || data.length === 0) {
+        return { averageRating: 0, totalCount: 0, recentAuthors: [] };
+      }
+
+      const sum = data.reduce((acc, row: any) => acc + Number(row.rating || 0), 0);
+      const averageRating = Math.round((sum / data.length) * 10) / 10;
+      const recentAuthors = data
+        .slice(0, 3)
+        .map((row: any) => String(row.patient_display_name || '').trim())
+        .filter(Boolean);
+
+      return {
+        averageRating,
+        totalCount: data.length,
+        recentAuthors,
+      };
+    } catch {
+      return { averageRating: 0, totalCount: 0, recentAuthors: [] };
+    }
+  }
+
+  static async getReviewsPage(params?: {
+    offset?: number;
+    limit?: number;
+    departmentId?: string;
+    fiveStarOnly?: boolean;
+  }): Promise<{ items: VerifiedReviewRecord[]; totalMatching: number; hasMore: boolean }> {
+    const offset = params?.offset ?? 0;
+    const limit = params?.limit ?? 6;
+    const departmentId = params?.departmentId || '';
+    const fiveStarOnly = Boolean(params?.fiveStarOnly);
+
+    try {
+      const doctorJoin = departmentId
+        ? 'doctors!inner(name, slug, department_id, departments(id, name, slug))'
+        : 'doctors(name, slug, department_id, departments(id, name, slug))';
+
+      let query = supabase
+        .from('reviews')
+        .select(`*, ${doctorJoin}`, { count: 'exact' })
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (departmentId) {
+        query = query.eq('doctors.department_id', departmentId);
+      }
+      if (fiveStarOnly) {
+        query = query.eq('rating', 5);
+      }
+
+      const { data, count, error } = await query;
+      if (error || !data) {
+        return { items: [], totalMatching: 0, hasMore: false };
+      }
+
+      const items = data.map(SupabaseService.mapReviewRow);
+      const totalMatching = typeof count === 'number' ? count : items.length;
+      return {
+        items,
+        totalMatching,
+        hasMore: offset + items.length < totalMatching,
+      };
+    } catch {
+      return { items: [], totalMatching: 0, hasMore: false };
+    }
+  }
+
   static async getReviews(doctorId?: string): Promise<VerifiedReviewRecord[]> {
     try {
       let query = supabase
         .from('reviews')
-        .select('*, doctors(name, slug)')
+        .select('*, doctors(name, slug, department_id, departments(id, name, slug))')
         .order('created_at', { ascending: false });
 
       if (doctorId) {
@@ -609,17 +711,24 @@ export class SupabaseService {
 
       const { data, error } = await query;
       if (error || !data) return [];
-      return data.map((r: any) => ({
-        id: r.id,
-        doctor_id: r.doctor_id,
-        doctor_name: r.doctors?.name,
-        doctor_slug: r.doctors?.slug,
-        patient_display_name: r.patient_display_name,
-        rating: r.rating,
-        comment: r.comment,
-        is_verified: Boolean(r.is_verified),
-        created_at: r.created_at,
-      }));
+      return data.map(SupabaseService.mapReviewRow);
+    } catch {
+      return [];
+    }
+  }
+
+  static async getEligibleCompletedVisitsForReview(): Promise<SupabaseAppointmentRecord[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    try {
+      const [appts, existingRes] = await Promise.all([
+        SupabaseService.getPatientAppointments(),
+        supabase.from('reviews').select('appointment_id').eq('patient_id', user.id),
+      ]);
+
+      const reviewedIds = new Set((existingRes.data || []).map((r: any) => r.appointment_id));
+      return appts.filter(a => a.status === 'completed' && !reviewedIds.has(a.id));
     } catch {
       return [];
     }

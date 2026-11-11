@@ -1,13 +1,13 @@
-// Homepage CTA, Patient Services, Verified Patient Reviews, Centres Map, FAQ & Accreditations Sections
+// Homepage CTA, Patient Services, Centres Map & FAQ Sections
 
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Phone, MessageCircle, MapPin, Star, ChevronDown, ShieldCheck } from 'lucide-react';
+import { Phone, MessageCircle, MapPin, ChevronDown } from 'lucide-react';
 import { RelifLine } from '@/components/ui/RelifLine';
 import { SectionHeader } from '@/components/ui';
 import { ROUTES, APP_CONFIG } from '@/config/constants';
-import { SupabaseService, VerifiedReviewRecord } from '@/services/supabaseService';
+import { SupabaseService } from '@/services/supabaseService';
 import type { MasterBranch } from '@/data/masterCatalog';
 
 export function ClosingCTASection() {
@@ -237,117 +237,6 @@ export function CentresMapSection() {
                 </div>
               )}
             </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ── Verified Patient Reviews & Clinical Benchmarks ────────────────────────────
-export function TrustSection() {
-  const [reviews, setReviews] = useState<VerifiedReviewRecord[]>([]);
-  const [current, setCurrent] = useState(0);
-
-  useEffect(() => {
-    void SupabaseService.getReviews().then(setReviews);
-  }, []);
-
-  useEffect(() => {
-    if (reviews.length <= 1) return;
-    const interval = setInterval(() => setCurrent(c => (c + 1) % reviews.length), 6000);
-    return () => clearInterval(interval);
-  }, [reviews.length]);
-
-  return (
-    <section className="section-padding bg-paper" aria-label="Patient stories & accreditations">
-      <div className="section-container">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <span className="font-mono text-xs font-medium text-verdigris tracking-widest uppercase block mb-3">
-              Recognized Benchmarks
-            </span>
-            <h2 className="section-heading mb-6">Clinical Trust &amp; Safety.</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {[
-                { title: 'NABH Accredited', sub: 'National Hospital Standards' },
-                { title: 'NABL Certified', sub: 'Precision Diagnostic Labs' },
-                { title: 'ISO 9001:2015', sub: 'Clinical Quality Management' },
-                { title: 'ABDM & ABHA Ready', sub: 'Digital Health Ecosystem' },
-              ].map(item => (
-                <div key={item.title} className="p-4 rounded-xl border border-sage bg-bone shadow-warm-xs">
-                  <p className="text-sm font-bold text-ink">{item.title}</p>
-                  <p className="text-xs text-ink-soft mt-1">{item.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Verified Reviews from completed appointments only */}
-          <div className="card p-7 bg-bone border-sage">
-            <div className="flex items-center justify-between mb-4">
-              <span className="font-mono text-[11px] font-semibold uppercase tracking-widest text-verdigris flex items-center gap-1.5">
-                <ShieldCheck size={14} /> Verified Patient Reviews
-              </span>
-              {reviews.length > 0 && (
-                <span className="text-xs font-mono text-ink-soft">
-                  {current + 1} / {reviews.length}
-                </span>
-              )}
-            </div>
-
-            {reviews.length > 0 ? (
-              <div>
-                {(() => {
-                  const rev = reviews[current] || reviews[0];
-                  return (
-                    <blockquote>
-                      <div className="flex items-center gap-1 mb-3">
-                        {Array.from({ length: rev.rating }).map((_, idx) => (
-                          <Star key={idx} size={14} className="fill-saffron text-saffron" />
-                        ))}
-                      </div>
-                      <p className="font-display text-xl font-semibold text-ink leading-relaxed mb-4">
-                        &ldquo;{rev.comment}&rdquo;
-                      </p>
-                      <footer className="flex items-center justify-between gap-3 pt-3 border-t border-sage-light">
-                        <div>
-                          <p className="text-sm font-semibold text-ink">{rev.patient_display_name}</p>
-                          <p className="text-xs text-ink-soft">
-                            Verified visit · {rev.doctor_name || 'Relif Care Specialist'}
-                          </p>
-                        </div>
-                        <div className="flex gap-1.5">
-                          {reviews.map((r, i) => (
-                            <button
-                              key={r.id}
-                              type="button"
-                              onClick={() => setCurrent(i)}
-                              className={`h-2 rounded-full transition-all ${
-                                i === current ? 'w-5 bg-verdigris' : 'w-2 bg-sage'
-                              }`}
-                              aria-label={`View review ${i + 1}`}
-                            />
-                          ))}
-                        </div>
-                      </footer>
-                    </blockquote>
-                  );
-                })()}
-              </div>
-            ) : (
-              <div className="space-y-3 py-2">
-                <p className="font-display text-xl font-semibold text-ink">
-                  Only verified post-visit feedback appears here.
-                </p>
-                <p className="text-sm text-ink-soft leading-relaxed">
-                  To protect authenticity, Relif Care allows reviews exclusively from signed-in patients after a completed appointment in their portal.
-                </p>
-                <Link to={ROUTES.patientAppointments} className="inline-flex text-xs font-semibold text-verdigris hover:underline">
-                  View My Completed Visits →
-                </Link>
-              </div>
-            )}
           </div>
         </div>
       </div>
