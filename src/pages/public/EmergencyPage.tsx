@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
-import { Phone, AlertTriangle, ShieldAlert, HeartPulse, Activity } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Phone, AlertTriangle, ShieldAlert, HeartPulse, Activity, Clock, MapPin } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { APP_CONFIG } from '@/config/constants';
-import { SupabaseService } from '@/services/supabaseService';
+import { SupabaseService, type BranchQueueMetric } from '@/services/supabaseService';
 
 export function EmergencyPage() {
+  const [branchQueues, setBranchQueues] = useState<BranchQueueMetric[]>([]);
   const [donorName, setDonorName] = useState('');
   const [bloodGroup, setBloodGroup] = useState('O+');
   const [donorPhone, setDonorPhone] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    void SupabaseService.getBranchQueueMetrics().then(setBranchQueues);
+  }, []);
 
   const handleDonorSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,6 +74,67 @@ export function EmergencyPage() {
       </div>
 
       <div className="section-container section-padding space-y-16">
+        {/* Live ER & Urgent Care Triage Wait Times */}
+        {branchQueues.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <span className="font-mono text-xs font-semibold uppercase tracking-widest text-verdigris block mb-1">
+                  Live Queue &amp; Urgent Care Estimate
+                </span>
+                <h2 className="font-display text-2xl sm:text-3xl font-bold text-ink">
+                  Emergency Triage Wait Times by Centre
+                </h2>
+              </div>
+              <span className="font-mono text-xs text-ink-soft bg-bone px-3 py-1 rounded-full border border-sage-light">
+                Updated from live branch slot load · Life-threatening cases seen immediately
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {branchQueues.map(bq => (
+                <div key={bq.branchId} className="card p-5 bg-bone border-sage-light space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <p className="font-display font-bold text-lg text-ink">{bq.shortName}</p>
+                      <p className="text-xs text-ink-soft flex items-start gap-1 mt-0.5">
+                        <MapPin size={12} className="text-verdigris flex-shrink-0 mt-0.5" />
+                        <span>{bq.address}</span>
+                      </p>
+                    </div>
+                    <span className="font-mono text-[11px] font-bold uppercase px-2.5 py-1 rounded-full bg-mint text-verdigris-deep flex-shrink-0">
+                      {bq.erStatus}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-sage-light">
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-saffron-deep" />
+                      <div>
+                        <p className="text-xs text-ink-soft">Est. Urgent Triage</p>
+                        <p className="font-mono font-bold text-base text-ink">~{bq.erTriageMinutes} mins</p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-xs text-ink-soft">Open OPD Today</p>
+                      <p className="font-mono font-semibold text-sm text-verdigris-deep">
+                        {bq.openSlotsToday} {bq.openSlotsToday === 1 ? 'slot' : 'slots'}
+                      </p>
+                    </div>
+                  </div>
+
+                  <a
+                    href={`tel:${bq.emergencyPhone}`}
+                    className="btn btn-secondary btn-sm w-full justify-center text-xs"
+                  >
+                    <Phone size={13} /> ER Desk: {bq.emergencyPhone}
+                  </a>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Triage Protocol Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="card p-6 border-l-4 border-l-signal space-y-3 bg-paper">

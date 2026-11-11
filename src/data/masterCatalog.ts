@@ -58,6 +58,10 @@ export interface MasterDoctor {
   rating: number;
   reviewCount: number;
   isActive: boolean;
+  gender?: 'Female' | 'Male';
+  acceptingNewPatients?: boolean;
+  weekendOpd?: boolean;
+  acceptedInsurers?: string[];
 }
 
 export const MASTER_BRANCHES: MasterBranch[] = [

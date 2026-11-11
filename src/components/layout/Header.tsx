@@ -71,6 +71,26 @@ export function Header() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [activePatient, setActivePatient] = useState<PatientUser | null>(null);
+  const [highContrast, setHighContrast] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('relif_high_contrast') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    if (highContrast) {
+      document.documentElement.setAttribute('data-contrast', 'high');
+    } else {
+      document.documentElement.removeAttribute('data-contrast');
+    }
+    try {
+      localStorage.setItem('relif_high_contrast', String(highContrast));
+    } catch {
+      // ignore storage failure
+    }
+  }, [highContrast]);
   const location = useLocation();
   const navigate = useNavigate();
   const headerRef = useRef<HTMLElement>(null);
@@ -131,7 +151,7 @@ export function Header() {
                 key={item.key}
                 to={item.href}
                 className={({ isActive }) => cn(
-                  'px-2.5 py-1 rounded-full text-[12.5px] font-medium transition-all duration-200 block whitespace-nowrap',
+                  'px-2 2xl:px-2.5 py-1 rounded-full text-[12px] 2xl:text-[12.5px] font-medium transition-all duration-200 block whitespace-nowrap',
                   isActive
                     ? 'bg-paper text-verdigris shadow-warm-xs font-semibold'
                     : 'text-ink-soft hover:text-ink hover:bg-paper/60'
@@ -143,7 +163,7 @@ export function Header() {
           </nav>
 
           {/* Right Action Suite: Language + Sign In / User Profile + Primary Booking CTA */}
-          <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+          <div className="flex items-center gap-1 2xl:gap-2 flex-shrink-0">
             {/* Language Switch (Reactive i18n) */}
             <div className="hidden lg:flex items-center bg-bone border border-sage-light/80 rounded-full p-0.5 text-xs shadow-warm-xs">
               {LANGUAGES.map((lang) => {
@@ -153,7 +173,7 @@ export function Header() {
                     key={lang.code}
                     onClick={() => handleLanguageChange(lang.code as 'en' | 'hi' | 'mr')}
                     className={cn(
-                      'font-mono text-[10px] font-semibold px-2 py-0.5 rounded-full transition-all duration-200',
+                      'font-mono text-[10px] font-semibold px-1.5 2xl:px-2 py-0.5 rounded-full transition-all duration-200',
                       isActive
                         ? 'bg-verdigris text-white shadow-xs'
                         : 'text-ink-soft hover:text-verdigris'
@@ -165,6 +185,23 @@ export function Header() {
                 );
               })}
             </div>
+
+            {/* High Contrast Accessibility Toggle */}
+            <button
+              type="button"
+              onClick={() => setHighContrast(v => !v)}
+              aria-pressed={highContrast}
+              aria-label={highContrast ? 'Disable high contrast mode' : 'Enable high contrast mode'}
+              title="Toggle high contrast accessibility mode"
+              className={cn(
+                'hidden sm:inline-flex items-center justify-center font-mono text-[10px] font-bold px-1.5 2xl:px-2 py-1 rounded-full border transition-colors whitespace-nowrap',
+                highContrast
+                  ? 'bg-ink text-paper border-ink'
+                  : 'bg-bone text-ink-soft border-sage-light/80 hover:text-ink hover:border-verdigris'
+              )}
+            >
+              Aa+
+            </button>
 
             {/* Unified Account Dropdown (My Appointments, Reports, Profile, Logout) */}
             {activePatient ? (
@@ -253,14 +290,14 @@ export function Header() {
               <div className="hidden sm:flex items-center gap-1">
                 <Link
                   to={ROUTES.login}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-2.5 py-1.5 rounded-full hover:bg-bone border border-sage-light/70 shadow-warm-xs"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-ink hover:text-verdigris transition-colors px-2 2xl:px-2.5 py-1.5 rounded-full hover:bg-bone border border-sage-light/70 shadow-warm-xs whitespace-nowrap"
                 >
                   <LogIn size={13} className="text-verdigris" />
                   <span>{t('nav.login')}</span>
                 </Link>
                 <Link
                   to={ROUTES.register}
-                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2.5 py-1.5 rounded-full border border-verdigris/25 transition-colors"
+                  className="inline-flex items-center text-[11px] font-semibold text-verdigris-deep bg-mint/50 hover:bg-mint px-2 2xl:px-2.5 py-1.5 rounded-full border border-verdigris/25 transition-colors whitespace-nowrap"
                 >
                   {t('nav.register')}
                 </Link>
@@ -270,7 +307,7 @@ export function Header() {
             {/* Luxury Primary CTA: Champagne / Saffron Gold Elevation */}
             <Link
               to={ROUTES.book}
-              className="relative group inline-flex items-center gap-1.5 text-xs font-bold px-3.5 sm:px-4 py-2 rounded-full transition-all duration-300 shadow-warm hover:shadow-saffron hover:-translate-y-0.5 active:translate-y-0 overflow-hidden flex-shrink-0"
+              className="relative group inline-flex items-center gap-1.5 text-xs font-bold px-3 2xl:px-4 py-2 rounded-full transition-all duration-300 shadow-warm hover:shadow-saffron hover:-translate-y-0.5 active:translate-y-0 overflow-hidden flex-shrink-0 whitespace-nowrap"
               style={{
                 background: 'linear-gradient(135deg, #F0A22E 0%, #D4861A 100%)',
                 color: '#10261F',

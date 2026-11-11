@@ -23,6 +23,17 @@
     font-size: 16px;
   }
 
+  html[data-contrast='high'] {
+    --ink: #071410;
+    --ink-soft: #1C352B;
+    --paper: #FFFFFF;
+    --bone: #F5EFE2;
+    --sage: #2D5A49;
+    --sage-light: #6B8E7F;
+    --verdigris: #0F594C;
+    --verdigris-deep: #093B32;
+  }
+
   /* Television & 4K Ultra-Wide Screen Scaling (1920px+) */
   @media screen and (min-width: 1920px) {
     html {

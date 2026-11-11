@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { FlaskConical, Pill, FileText, Scan } from 'lucide-react';
+import { FlaskConical, Pill, FileText, Scan, FolderUp, CheckCircle2 } from 'lucide-react';
 import { Badge, EmptyState, Skeleton } from '@/components/ui';
 import { ROUTES } from '@/config/constants';
 import { SupabaseService, PatientReportRecord } from '@/services/supabaseService';
@@ -115,6 +115,53 @@ export function PatientRecords() {
           })}
         </div>
       )}
+
+      {/* Prior Outside Records Interoperability & ABHA Guidance */}
+      <div className="card p-6 bg-bone border-sage-light space-y-4">
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 rounded-xl bg-paper border border-sage-light flex items-center justify-center text-verdigris flex-shrink-0">
+            <FolderUp size={18} />
+          </div>
+          <div>
+            <span className="font-mono text-[10px] font-bold uppercase tracking-widest text-verdigris">
+              Medical Records Interoperability
+            </span>
+            <h2 className="font-display text-lg font-bold text-ink mt-0.5">
+              Bringing Outside MRI Scans, Lab Reports or Prior Notes?
+            </h2>
+            <p className="text-xs text-ink-soft leading-relaxed mt-1">
+              Prepare your prior records ahead of your visit so your Relif Care specialist has complete clinical context from minute one:
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+          <div className="p-3.5 rounded-xl bg-paper border border-sage-light space-y-1">
+            <p className="font-semibold text-ink flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-verdigris" /> DICOM Imaging (MRI / CT)
+            </p>
+            <p className="text-ink-soft leading-relaxed">
+              Bring the original DICOM CD/USB or PACS share link along with the radiologist typed summary to Level 0 PACS Desk 15 mins early.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-paper border border-sage-light space-y-1">
+            <p className="font-semibold text-ink flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-verdigris" /> ABHA Health Locker Sync
+            </p>
+            <p className="text-ink-soft leading-relaxed">
+              Add your 14-digit ABHA Health ID in <Link to={ROUTES.patientProfile} className="text-verdigris underline font-medium">My Profile</Link> to authorize linked lab &amp; discharge record exchange.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-paper border border-sage-light space-y-1">
+            <p className="font-semibold text-ink flex items-center gap-1.5">
+              <CheckCircle2 size={13} className="text-verdigris" /> Prior Prescriptions &amp; Allergies
+            </p>
+            <p className="text-ink-soft leading-relaxed">
+              Carry recent HbA1c/CBC/creatinine PDFs and a list of blood thinners, thyroid doses, or drug allergies for nursing triage.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Search, Star, Video, MapPin, Globe, IndianRupee } from 'lucide-react';
+import { Search, Star, Video, MapPin, Globe, IndianRupee, ShieldCheck, Calendar } from 'lucide-react';
 import { ROUTES } from '@/config/constants';
 import { AvailabilityDot, DoctorAvatar, EmptyState, Skeleton } from '@/components/ui';
 import { SupabaseService } from '@/services/supabaseService';
@@ -24,8 +24,12 @@ export function DoctorsPage() {
   const [selectedDept, setSelectedDept] = useState(initialDept);
   const [selectedBranch, setSelectedBranch] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedGender, setSelectedGender] = useState('');
+  const [selectedInsurer, setSelectedInsurer] = useState('');
   const [maxFee, setMaxFee] = useState<string>('');
   const [availableTodayOnly, setAvailableTodayOnly] = useState(false);
+  const [weekendOnly, setWeekendOnly] = useState(false);
+  const [acceptingNewOnly, setAcceptingNewOnly] = useState(false);
 
   useEffect(() => {
     void Promise.all([
@@ -46,6 +50,12 @@ export function DoctorsPage() {
     return Array.from(set).sort();
   }, [doctors]);
 
+  const allInsurers = useMemo(() => {
+    const set = new Set<string>();
+    doctors.forEach(d => (d.acceptedInsurers || []).forEach(ins => set.add(ins)));
+    return Array.from(set).sort();
+  }, [doctors]);
+
   const filtered = useMemo(() => {
     return doctors.filter(d => {
       const q = search.trim().toLowerCase();
@@ -59,27 +69,51 @@ export function DoctorsPage() {
       const matchesDept = !selectedDept || d.departmentSlug === selectedDept;
       const matchesBranch = !selectedBranch || d.branchSlug === selectedBranch;
       const matchesLanguage = !selectedLanguage || d.languages.includes(selectedLanguage);
+      const matchesGender = !selectedGender || d.gender === selectedGender;
+      const matchesInsurer = !selectedInsurer || (d.acceptedInsurers || []).includes(selectedInsurer);
       const matchesFee = !maxFee || d.feeInClinic <= Number(maxFee);
       const matchesAvail = !availableTodayOnly || d.availability === 'available';
+      const matchesWeekend = !weekendOnly || Boolean(d.weekendOpd);
+      const matchesNew = !acceptingNewOnly || Boolean(d.acceptingNewPatients);
 
       return (
         matchesSearch &&
         matchesDept &&
         matchesBranch &&
         matchesLanguage &&
+        matchesGender &&
+        matchesInsurer &&
         matchesFee &&
-        matchesAvail
+        matchesAvail &&
+        matchesWeekend &&
+        matchesNew
       );
     });
-  }, [doctors, search, selectedDept, selectedBranch, selectedLanguage, maxFee, availableTodayOnly]);
+  }, [
+    doctors,
+    search,
+    selectedDept,
+    selectedBranch,
+    selectedLanguage,
+    selectedGender,
+    selectedInsurer,
+    maxFee,
+    availableTodayOnly,
+    weekendOnly,
+    acceptingNewOnly,
+  ]);
 
   const clearFilters = () => {
     setSearch('');
     setSelectedDept('');
     setSelectedBranch('');
     setSelectedLanguage('');
+    setSelectedGender('');
+    setSelectedInsurer('');
     setMaxFee('');
     setAvailableTodayOnly(false);
+    setWeekendOnly(false);
+    setAcceptingNewOnly(false);
   };
 
   return (
@@ -102,8 +136,8 @@ export function DoctorsPage() {
       {/* Filters Bar */}
       <div className="bg-paper border-b border-sage-light sticky top-14 z-sticky">
         <div className="section-container py-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
-            <div className="relative lg:col-span-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-3">
+            <div className="relative sm:col-span-2">
               <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-soft" />
               <input
                 type="search"
@@ -158,6 +192,31 @@ export function DoctorsPage() {
             </select>
 
             <select
+              value={selectedGender}
+              onChange={e => setSelectedGender(e.target.value)}
+              className="input text-sm"
+              aria-label="Filter by specialist gender"
+            >
+              <option value="">Any Gender</option>
+              <option value="Female">Female Specialist</option>
+              <option value="Male">Male Specialist</option>
+            </select>
+
+            <select
+              value={selectedInsurer}
+              onChange={e => setSelectedInsurer(e.target.value)}
+              className="input text-sm"
+              aria-label="Filter by accepted cashless insurer"
+            >
+              <option value="">Any Insurance / TPA</option>
+              {allInsurers.map(ins => (
+                <option key={ins} value={ins}>
+                  {ins}
+                </option>
+              ))}
+            </select>
+
+            <select
               value={maxFee}
               onChange={e => setMaxFee(e.target.value)}
               className="input text-sm"
@@ -171,7 +230,7 @@ export function DoctorsPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
                 onClick={() => setAvailableTodayOnly(v => !v)}
@@ -183,14 +242,43 @@ export function DoctorsPage() {
                 )}
               >
                 <AvailabilityDot status="available" />
-                Available today only
+                Available today
               </button>
-              <span className="text-xs font-mono text-ink-soft">
+
+              <button
+                type="button"
+                onClick={() => setWeekendOnly(v => !v)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                  weekendOnly
+                    ? 'bg-verdigris text-white border-verdigris'
+                    : 'bg-bone text-ink-soft border-sage-light hover:border-verdigris'
+                )}
+              >
+                <Calendar size={12} />
+                Weekend OPD
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAcceptingNewOnly(v => !v)}
+                className={cn(
+                  'inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors',
+                  acceptingNewOnly
+                    ? 'bg-verdigris text-white border-verdigris'
+                    : 'bg-bone text-ink-soft border-sage-light hover:border-verdigris'
+                )}
+              >
+                <ShieldCheck size={12} />
+                Accepting new patients
+              </button>
+
+              <span className="text-xs font-mono text-ink-soft ml-1">
                 Showing {filtered.length} {filtered.length === 1 ? 'doctor' : 'doctors'}
               </span>
             </div>
 
-            {(search || selectedDept || selectedBranch || selectedLanguage || maxFee || availableTodayOnly) && (
+            {(search || selectedDept || selectedBranch || selectedLanguage || selectedGender || selectedInsurer || maxFee || availableTodayOnly || weekendOnly || acceptingNewOnly) && (
               <button
                 type="button"
                 onClick={clearFilters}
