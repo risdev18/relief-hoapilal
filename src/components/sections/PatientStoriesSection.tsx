@@ -150,7 +150,7 @@ export function PatientStoriesSection() {
   return (
     <>
       <section
-        className="py-8 md:py-10 bg-paper border-y border-sage-light"
+        className="py-5 md:py-6 bg-paper border-y border-sage-light"
         aria-label="Patient stories summary"
       >
         <div className="section-container">
